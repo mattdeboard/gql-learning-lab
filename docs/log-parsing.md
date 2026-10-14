@@ -9,7 +9,7 @@ Every subgraph line looks the same (see `shared/log.ts`):
 ```
 12:00:14.640 [daily-logs] op       LogsView__daily_logs__1
 12:00:14.650 [users] entities 1 User×1
-12:00:14.652 [users] sql      SELECT * FROM users WHERE id = 'user-1'
+12:00:14.652 [users] sql      select * from `users` where `id` = 'user-1' limit 1
 ```
 
 | field | meaning                                                                                                                                     |
@@ -79,7 +79,7 @@ awk '$3=="op" || $3=="entities"' logs/dev.log
 awk '$3=="sql" {print $2}' logs/dev.log | sort | uniq -c
 ```
 
-**N+1 detector.** Replaces literals with placeholders and groups identical query shapes. If a shape shows up hundreds of times with `id = ?`, that's N+1. After adding a dataloader, it should collapse to a few `IN (?, ?, …)` lines.
+**N+1 detector.** Replaces literals with placeholders and groups identical query shapes. If a shape shows up hundreds of times with `` `id` = ? ``, that's N+1. After adding a dataloader, it should collapse to a few `` `id` in (?, ?, …) `` lines.
 
 ```bash
 awk '$3=="sql"' logs/dev.log \

@@ -1,1 +1,54 @@
-# TODO(matt)
+type Project {
+  id: ID!
+  name: String
+  latitude: Float
+  longitude: Float
+}
+
+type DailyLog {
+  id: ID!
+  project: Project
+  date: String
+  status: Status
+  createdBy: User
+}
+
+enum Status {
+  APPROVED
+  DRAFT
+  SUBMITTED
+}
+
+input DailyLogQueryInput {
+  projectId: ID
+  date: String
+  status: Status
+}
+
+input CreateDailyLogInput {
+  projectId: ID!
+  date: String!
+  status: Status!
+}
+
+input UpdateDailyLogInput {
+  id: ID!
+  status: Status
+}
+
+type Query {
+  dailyLogsBy(filters: DailyLogQueryInput!): [DailyLog]
+  dailyLogsForCurrentUser: [DailyLog]
+}
+
+type Mutation {
+  createLog(options: CreateDailyLogInput): DailyLog
+  deleteLog(id: ID!): DailyLog
+  updateLog(options: UpdateDailyLogInput!): DailyLog
+}
+
+type User @key(fields: "id", resolvable: false) {
+  id: ID!
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])

@@ -4,7 +4,7 @@ import type { ApolloServerPlugin } from '@apollo/server';
 //
 //   12:04:31.207 [daily-logs] op       GetDailyLog__daily_logs__0
 //   12:04:31.215 [users] entities 23 User×23
-//   12:04:31.216 [users] sql      SELECT * FROM users WHERE id = 'user-1'
+//   12:04:31.216 [users] sql      select * from `users` where `id` = 'user-1' limit 1
 //
 // Field 1 is a timestamp, field 2 is the subgraph, field 3 is the kind of line.
 // docs/log-parsing.md relies on this format; update it if you change this.

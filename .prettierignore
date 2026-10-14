@@ -10,5 +10,3 @@ router/supergraph.graphql
 
 # Stub schemas. A file with only a comment isn't valid GraphQL, so Prettier
 # fails on it. Delete a subgraph's line here once you've written its schema.
-subgraphs/users/schema.graphql
-subgraphs/daily-logs/schema.graphql

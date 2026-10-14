@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
-import { buildSubgraphSchema } from '@apollo/subgraph';
+import { buildSubgraphSchema, type GraphQLResolverMap } from '@apollo/subgraph';
 import { parse } from 'graphql';
 import { authFromHeaders, type AuthContext } from '@lab/shared/context';
 import { log, operationLogger } from '@lab/shared/log';
@@ -20,7 +20,9 @@ if (sdl.replace(/#.*$/gm, '').trim() === '') {
 }
 
 const server = new ApolloServer<AuthContext>({
-  schema: buildSubgraphSchema([{ typeDefs: parse(sdl), resolvers }]),
+  // The cast bridges our Resolvers type (shared/resolvers.ts), which types
+  // __resolveReference correctly, to Apollo's looser GraphQLResolverMap.
+  schema: buildSubgraphSchema([{ typeDefs: parse(sdl), resolvers: resolvers as GraphQLResolverMap }]),
   plugins: [operationLogger(SUBGRAPH)],
 });
 

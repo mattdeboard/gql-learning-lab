@@ -53,6 +53,18 @@ export default tseslint.config(
       // Apollo's APIs (plugin hooks, context functions) require async functions even
       // when there's nothing to await, so this rule would only produce noise.
       '@typescript-eslint/require-await': 'off',
+
+      // Names starting with _ (or just _) are deliberately unused, e.g. the
+      // (_parent, _args, context) resolver arguments you have to accept positionally.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
     },
   },
 

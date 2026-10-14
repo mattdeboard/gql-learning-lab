@@ -1,1 +1,13 @@
-# TODO(matt)
+type User @key(fields: "id") {
+  id: ID!
+  name: String
+  email: String
+  trade: String
+}
+
+type Query {
+  users: [User]
+  user(id: ID!): User
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
