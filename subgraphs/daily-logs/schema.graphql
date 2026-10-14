@@ -1,11 +1,11 @@
-type Project {
+type Project @key(fields: "id") {
   id: ID!
   name: String
   latitude: Float
   longitude: Float
 }
 
-type DailyLog {
+type DailyLog @key(fields: "id") {
   id: ID!
   project: Project
   date: String
@@ -17,6 +17,10 @@ enum Status {
   APPROVED
   DRAFT
   SUBMITTED
+}
+
+type User @key(fields: "id", resolvable: false) {
+  id: ID!
 }
 
 input DailyLogQueryInput {
@@ -45,10 +49,6 @@ type Mutation {
   createLog(options: CreateDailyLogInput): DailyLog
   deleteLog(id: ID!): DailyLog
   updateLog(options: UpdateDailyLogInput!): DailyLog
-}
-
-type User @key(fields: "id", resolvable: false) {
-  id: ID!
 }
 
 extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
