@@ -40,7 +40,7 @@ Per Level, Claude's job is only to make sure that Level's subgraphs exist and ru
 
 ### Deferred (Matt said "later"; bring it up when it becomes relevant, don't build unprompted)
 
-- **Operation runner** (deferred 2026-10-14): `npm run op queries/<name>.graphql` that sends a saved operation with its sibling `<name>.variables.json`, a persona flag for the `Authorization` header, and prints the response plus the query plan. The `plan()` function in `docs/log-parsing.md` can't send variables, so it can't run these files. Likely useful by Level 2, for the before/after SQL counts.
+(Nothing deferred right now.)
 
 ## How this repo works
 
@@ -52,4 +52,5 @@ Per Level, Claude's job is only to make sure that Level's subgraphs exist and ru
 - **Resolver types:** `shared/resolvers.ts` exports `Resolvers<{ Entity: { keyFields } }, TContext>`. The entity map mirrors each `@key` by hand. Each bootstrap casts `resolvers as GraphQLResolverMap` for `buildSubgraphSchema`.
 - **Boundaries:** a subgraph may import `@lab/shared/*` but never another subgraph (enforced by ESLint). Only `scripts/` knows about every domain.
 - **Logging:** every line is `time [subgraph] kind message`, where kind is `op`, `entities`, `sql` or `info`. Recipes are in `docs/log-parsing.md`. Keep that doc in sync if the format changes.
+- **Running saved operations:** `npm run op -- queries/<name>.graphql [--as user-9|none] [--vars <json>]` (`scripts/op.ts`) sends the operation with its sibling `<name>.variables.json`, then prints the plan, the response, and the subgraph log lines and counts it produced (when `logs/dev.log` exists).
 - **Before committing:** `npm run check` (typecheck, type-aware lint, Prettier).

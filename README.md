@@ -196,6 +196,14 @@ Manual testing in Apollo Sandbox at `http://localhost:4000` with:
 }
 ```
 
+Run a saved operation from `queries/` and see its plan, response, and the SQL/`_entities` lines it caused:
+
+```bash
+npm run op -- queries/dailyLogsBy.graphql --as user-2 --vars '{"filters": {"status": "DRAFT"}}'
+```
+
+Variables default to a sibling `dailyLogsBy.variables.json`; `--as none` sends no `Authorization` header. The log section needs `npm run dev:log` running.
+
 Each subgraph is independently startable: `npm run dev -w subgraphs/notes`.
 
 The production-like path: `LEVEL=n npm run compose` composes `router/supergraph.graphql` with rover (LEVEL defaults to 6); `LEVEL=n npm run compose -- run` also starts the standalone router against it.

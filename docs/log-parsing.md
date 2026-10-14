@@ -106,6 +106,8 @@ Use this at Level 5 to see the 800ms weather delay, and the extra sequential ste
 
 ## Query plans without Sandbox
 
+For operations saved in `queries/`, `npm run op -- queries/<name>.graphql` does all of this for you: it sends the variables, prints the plan, and prints this request's log lines with per-subgraph counts (it does the `mark`/`since` bookkeeping itself). The `plan` function below is for quick one-offs without variables.
+
 The router returns plans when asked with a header (configured in `router/router.yaml`):
 
 ```bash
