@@ -179,6 +179,7 @@ nvm use               # Node 24 (from .nvmrc)
 npm install
 npm run rover:install # once per machine: rover's router + composition plugins
 npm run seed          # wipe and reseed every database; prints which Bearer token is which persona
+npm run seed -- notes # reseed only the named subgraph(s); the rest keep their data
 npm run dev           # subgraphs for LEVEL=0 + rover dev (router on :4000)
 LEVEL=2 npm run dev   # Levels 0 through 2
 npm run dev:log       # same as dev, also writes logs/dev.log
