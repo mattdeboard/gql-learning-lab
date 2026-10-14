@@ -1,0 +1,8 @@
+query NotesByDailyLogId($dailyLogId: ID!) {
+  notesForDailyLog(dailyLogId: $dailyLogId) {
+    author {
+      email
+    }
+    body
+  }
+}

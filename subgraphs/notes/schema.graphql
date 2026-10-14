@@ -1,0 +1,23 @@
+type DailyLog @key(fields: "id") {
+  id: ID!
+  notes: [Note]
+}
+
+type User @key(fields: "id", resolvable: false) {
+  id: ID!
+}
+
+type Note @key(fields: "id") {
+  id: ID!
+  dailyLog: DailyLog!
+  author: User!
+  body: String
+  createdAt: String!
+}
+
+type Query {
+  noteById(id: ID!): Note
+  notesForDailyLog(dailyLogId: ID!): [Note]
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
