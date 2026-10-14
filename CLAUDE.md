@@ -38,6 +38,10 @@ Per Level, Claude's job is only to make sure that Level's subgraphs exist and ru
 - `photos` (Level 2): jobsite progress photos, not profile pictures; placeholder image URLs (already in the seed).
 - Stretch goal `k6` load test: Claude writes the k6 script; Matt writes the operations it sends.
 
+### Deferred (Matt said "later"; bring it up when it becomes relevant, don't build unprompted)
+
+- **Operation runner** (deferred 2026-10-14): `npm run op queries/<name>.graphql` that sends a saved operation with its sibling `<name>.variables.json`, a persona flag for the `Authorization` header, and prints the response plus the query plan. The `plan()` function in `docs/log-parsing.md` can't send variables, so it can't run these files. Likely useful by Level 2, for the before/after SQL counts.
+
 ## How this repo works
 
 - **Node 24 is required** (`.nvmrc`). Node runs `.ts` files directly via type stripping, with no build step and no `tsx`. That means no `enum`, `namespace`, or parameter properties (`erasableSyntaxOnly`), and relative imports spell out `.ts`. If a command fails with `Unknown file extension ".ts"`, the shell is on the wrong Node: `nvm use`.

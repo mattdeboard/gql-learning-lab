@@ -69,6 +69,8 @@ export async function getDailyLogsByIds(ids: readonly string[]) {
 }
 
 export async function getDailyLogsByProjectId(projectId: string) {
+  // TODO: Row-level authorization: If the requesting user doesn't have
+  // access to the project, we shouldn't return results.
   return await getDailyLogTable().select().where({ projectId }).orderBy('date');
 }
 

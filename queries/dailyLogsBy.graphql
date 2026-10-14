@@ -1,0 +1,12 @@
+query DailyLogsBy($filters: DailyLogQueryInput!) {
+  dailyLogsBy(filters: $filters) {
+    createdBy {
+      email
+    }
+    date
+    status
+    project {
+      name
+    }
+  }
+}
