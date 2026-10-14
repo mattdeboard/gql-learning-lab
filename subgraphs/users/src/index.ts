@@ -3,9 +3,10 @@ import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { buildSubgraphSchema, type GraphQLResolverMap } from '@apollo/subgraph';
 import { parse } from 'graphql';
-import { authFromHeaders, type AuthContext } from '@lab/shared/context';
+import { type AuthContext } from '@lab/shared/context';
 import { log, operationLogger } from '@lab/shared/log';
 import { resolvers } from './resolvers.ts';
+import { getContext } from './context.ts';
 
 const SUBGRAPH = 'users';
 const PORT = 4001;
@@ -28,7 +29,7 @@ const server = new ApolloServer<AuthContext>({
 
 const { url } = await startStandaloneServer(server, {
   listen: { port: PORT },
-  context: async ({ req }) => authFromHeaders(req.headers),
+  context: async ({ req }) => getContext(req.headers),
 });
 
 log(SUBGRAPH, 'info', `ready at ${url}`);

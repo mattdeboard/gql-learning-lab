@@ -10,7 +10,7 @@ export interface UserEntity {
   trade: string;
 }
 
-const getUserTable = () => connection<UserEntity>('users');
+export const getUserTable = () => connection<UserEntity>('users');
 
 export async function getUserById(id: string) {
   return await getUserTable().where({ id }).first();
