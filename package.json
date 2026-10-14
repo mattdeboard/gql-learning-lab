@@ -1,0 +1,16 @@
+{
+  "name": "gql-learning-lab",
+  "version": "1.0.0",
+  "description": "A hands-on Apollo Federation 2 project that simulates the **Daily Log** feature of a construction-management platform (modeled on Procore). One supergraph, many subgraphs, each owning its own data. The goal is learning by doing: entities, `@key`, `@external` / `@requires`, header propagation, cross-subgraph auth, query plans, and the N+1 problem as it actually appears in a federated graph.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
