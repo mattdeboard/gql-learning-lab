@@ -4,32 +4,9 @@ A hands-on Apollo Federation 2 project that simulates the **Daily Log** feature 
 
 ---
 
-## Division of labor (read this first, Claude Code)
+## Who writes what
 
-I'm writing the GraphQL myself. That's the point of this project.
-
-**You build the scaffolding:**
-
-- monorepo, workspaces, `tsconfig`, lint rules, run scripts
-- per-subgraph SQLite schemas (`db/schema.sql`) and deterministic seed scripts
-- `shared/` utilities (SQL logging, entity-call logging, auth context parsing)
-- a minimal server bootstrap per subgraph (`src/index.ts`) that loads `schema.graphql` and imports resolvers from `src/resolvers.ts`, and nothing else
-- router config (`router.yaml`, `supergraph.yaml`) and composition scripts
-- a data-access module per subgraph (`src/data.ts`) with plain query functions like `getNotesByDailyLogId(id)`. No batching, no caching.
-
-**I write, and you do not:**
-
-- every `schema.graphql` (all SDL, all federation directives)
-- every `src/resolvers.ts`, including `__resolveReference`
-- dataloaders
-- permission enforcement logic
-- the operations in `queries/`
-
-Leave `schema.graphql` and `src/resolvers.ts` as stubs with a `TODO(matt)` comment and nothing more. Don't pre-write type names, fields, or directives in the stubs.
-
-**When I ask for help on my GraphQL code, act as a tutor, not an author.** Explain the error, explain the federation concept behind it, point at the line. Only write the fix if I explicitly ask you to. If composition fails, show me the `rover` error verbatim first.
-
-Optimize everything you write for legibility over cleverness. Don't add abstractions I didn't ask for.
+I write all the GraphQL: every `schema.graphql`, every `src/resolvers.ts` (including `__resolveReference`), dataloaders, permission logic, and the operations in `queries/`. Everything else (workspaces, bootstraps, data access, seeds, router config, logging) is scaffolding generated with Claude Code, whose instructions live in [`CLAUDE.md`](CLAUDE.md).
 
 ---
 
@@ -78,38 +55,42 @@ One subgraph per domain. **Each subgraph owns its own SQLite file.** No subgraph
 
 ### Stack
 
-- Node + TypeScript (strict), npm workspaces monorepo
+- Node 24 + TypeScript (strict), npm workspaces monorepo. Node runs the `.ts` files directly (type stripping), so there's no build step.
 - `@apollo/server` + `@apollo/subgraph` per subgraph
 - Apollo Router via `rover dev` locally; `rover supergraph compose` + `router` binary as the "production-like" path
-- `better-sqlite3` per subgraph
+- SQLite per subgraph, through knex on the `better-sqlite3` driver (camelCase in code, snake_case in the database)
 - `dataloader` installed but unused (I'll wire it up)
 - `concurrently` to run everything with one command
+- ESLint (type-aware) + Prettier
 - No GraphQL codegen
 
 ### Repo layout
 
 ```
-daily-log-federation/
-  router/
-    router.yaml            # header propagation, query-plan exposure
-    supergraph.yaml        # rover composition config
-  subgraphs/
-    users/  auth/  permissions/  daily-logs/  weather/  crews/  notes/  photos/  comments/
-      src/index.ts         # YOU: server bootstrap only
-      src/data.ts          # YOU: plain SQL query functions
-      src/resolvers.ts     # ME (stub with TODO)
-      schema.graphql       # ME (stub with TODO)
-      db/schema.sql        # YOU
-      db/seed.ts           # YOU
-  shared/
-    db.ts                  # wraps better-sqlite3; logs every SQL statement with subgraph name
-    context.ts             # parses propagated Authorization header into { userId }
-    log.ts                 # logs each incoming operation; for `_entities`, logs representation count
-  queries/                 # ME
-  scripts/
-    seed-all.ts
-    compose.sh
-  README.md
+router/
+  router.yaml              # header propagation, query-plan exposure
+  supergraph.yaml          # generated per LEVEL (gitignored)
+subgraphs/
+  users/  auth/  permissions/  daily-logs/  weather/  crews/  notes/  photos/  comments/
+    schema.graphql         # mine
+    src/resolvers.ts       # mine
+    src/index.ts           # scaffolding: server bootstrap only
+    src/data.ts            # scaffolding: plain query functions, no batching or caching
+    db/schema.sql          # scaffolding
+    db/seed.ts             # scaffolding: writes this subgraph's slice of scripts/world.ts
+shared/
+  db.ts                    # knex connection; logs every SQL statement; camelCase <-> snake_case
+  context.ts               # parses the propagated Authorization header into { userId }
+  log.ts                   # logs each incoming operation; for `_entities`, the representation count
+  resolvers.ts             # Resolvers type for resolver maps
+  ids.ts                   # generateId('log') for rows created at runtime
+queries/                   # mine: named operations, one per .graphql file
+scripts/
+  subgraphs.ts             # the list of subgraphs: name, port, Level
+  world.ts                 # the deterministic seed dataset
+  seed-all.ts  dev.ts  write-supergraph-config.ts  compose.sh
+docs/
+  log-parsing.md           # grep/awk recipes for the logs
 ```
 
 ### Observability is the whole point
@@ -119,9 +100,7 @@ Every subgraph logs to stdout, prefixed with its name:
 - each incoming operation, and specifically each `_entities` call with **how many representations** it received
 - each SQL statement executed
 
-This is how I'll see the query plan fan out and see N+1 happen before I fix it. Also enable query-plan exposure on the router so I can request the plan for any operation (check current Apollo Router docs for the exact config key and request header).
-
-Wire the logging in at the server/plugin level in `index.ts` and `shared/`, so it works no matter what I put in my resolvers.
+This is how I'll see the query plan fan out and see N+1 happen before I fix it. The logging is wired in at the server/plugin level, so it works no matter what's in the resolvers. The router also exposes query plans: send `Apollo-Expose-Query-Plan: true` (or `dry-run`) with any operation. See [`docs/log-parsing.md`](docs/log-parsing.md) for how to read all of it.
 
 ---
 
@@ -141,11 +120,11 @@ What each subgraph owns, as **tables only**. The GraphQL shape is mine to design
 | `photos`      | 4008 | project (optionally attached to a log) | `photos(id, project_id, daily_log_id NULL, url, caption, taken_at, uploaded_by)`                       |
 | `comments`    | 4009 | photo                                  | `comments(id, photo_id, author_id, body, created_at)`                                                  |
 
-Notes for you:
+Notes:
 
-- `permissions` also needs a small **internal REST endpoint** outside the graph: `GET /internal/access?userId=&projectId=` → `{ allowed, role }`, plus a batch variant that takes many pairs. Build the endpoint; I'll decide how subgraphs use it.
-- `weather`: provide `src/fakeForecast.ts` with a deterministic `forecastFor(projectId, date): string`. Make the subgraph **artificially slow** with a configurable delay (env var, default 800ms) applied in the bootstrap.
-- `photos` are jobsite progress photos, not profile pictures. Use placeholder image URLs.
+- `permissions` also has a small **internal REST endpoint** outside the graph: `GET /internal/access?userId=&projectId=` → `{ allowed, role }`, plus a batch variant that takes many pairs. How subgraphs use it is part of Level 4.
+- `weather` has a deterministic `src/fakeForecast.ts` (`forecastFor(projectId, date)`) and is **artificially slow**: a configurable delay (env var, default 800ms).
+- `photos` are jobsite progress photos, not profile pictures, with placeholder image URLs.
 - `daily-logs` holds `projects` for now because the system design doesn't name a Projects service.
 
 ---
@@ -173,7 +152,7 @@ Deterministic (fixed IDs; any randomness uses a fixed seed). Minimum:
 
 ## Levels
 
-I work through these in order. Your job per Level is only to make sure the scaffolding for that Level's subgraphs exists and runs. Composition will fail until I've written the schemas, and that's expected.
+I work through these in order. `LEVEL=n npm run dev` runs Levels 0 through n. A new Level's subgraphs start as stubs, and composition fails until I've written their schemas.
 
 - **Level 0:** `users` + `daily-logs`. Composition, `@key`, `__resolveReference`, reading the query plan.
 - **Level 1:** `notes`. Extending an entity another subgraph owns; watching `_entities` in the logs.
@@ -188,7 +167,7 @@ I work through these in order. Your job per Level is only to make sure the scaff
 - `@defer` the slow weather block (high-latency jobsite tablets)
 - Persisted queries
 - Write-up of a client-side offline story (cached log, queued mutations)
-- `k6` load test: steady traffic plus an end-of-day burst of note writes. You can write the k6 script; I write the operations it sends.
+- `k6` load test: steady traffic plus an end-of-day burst of note writes (the operations it sends come from `queries/`)
 - Split one subgraph into its own repo and compose from a GraphOS registry instead of local files
 
 ---
@@ -196,19 +175,28 @@ I work through these in order. Your job per Level is only to make sure the scaff
 ## Running
 
 ```bash
+nvm use               # Node 24 (from .nvmrc)
 npm install
-npm run seed
-npm run dev        # starts all subgraphs + rover dev (router on :4000)
+npm run rover:install # once per machine: rover's router + composition plugins
+npm run seed          # wipe and reseed every database; prints which Bearer token is which persona
+npm run dev           # subgraphs for LEVEL=0 + rover dev (router on :4000)
+LEVEL=2 npm run dev   # Levels 0 through 2
+npm run dev:log       # same as dev, also writes logs/dev.log
 ```
 
-Local `rover` composition requires accepting Apollo's ELv2 license: set `APOLLO_ELV2_LICENSE=accept` in `.env`.
+Local `rover` composition requires accepting Apollo's ELv2 license: `APOLLO_ELV2_LICENSE=accept` in `.env`.
 
 Manual testing in Apollo Sandbox at `http://localhost:4000` with:
 
 ```json
 {
-  "Authorization": "Bearer user-1"
+  "Authorization": "Bearer user-1",
+  "Apollo-Expose-Query-Plan": "true"
 }
 ```
 
 Each subgraph is independently startable: `npm run dev -w subgraphs/notes`.
+
+The production-like path: `LEVEL=n npm run compose` composes `router/supergraph.graphql` with rover (LEVEL defaults to 6); `LEVEL=n npm run compose -- run` also starts the standalone router against it.
+
+Before committing: `npm run check` (typecheck, lint, format check).
