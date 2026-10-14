@@ -9,6 +9,7 @@ A hands-on Apollo Federation 2 project that simulates the **Daily Log** feature 
 I'm writing the GraphQL myself. That's the point of this project.
 
 **You build the scaffolding:**
+
 - monorepo, workspaces, `tsconfig`, lint rules, run scripts
 - per-subgraph SQLite schemas (`db/schema.sql`) and deterministic seed scripts
 - `shared/` utilities (SQL logging, entity-call logging, auth context parsing)
@@ -17,6 +18,7 @@ I'm writing the GraphQL myself. That's the point of this project.
 - a data-access module per subgraph (`src/data.ts`) with plain query functions like `getNotesByDailyLogId(id)`. No batching, no caching.
 
 **I write, and you do not:**
+
 - every `schema.graphql` (all SDL, all federation directives)
 - every `src/resolvers.ts`, including `__resolveReference`
 - dataloaders
@@ -42,15 +44,18 @@ A superintendent ("supe") opens a single **Daily Log** for one of their projects
 - photos taken that day, each with its comments and comment authors
 
 ### Functional requirements
+
 1. Fetch a single Daily Log in one operation to hydrate the view.
 2. Support low/no-connectivity, high-latency environments.
 3. Respect permissions: a supe sees their projects and only their projects.
 
 ### Non-functional requirements
+
 - End-of-day burstiness (everyone submits logs ~4–6pm local)
 - Steady all-day traffic otherwise
 
 ### Personas (seed data must cover all three)
+
 - **Author**: the supe; has project permissions.
 - **Crew**: users just added to a project's crew; they exist as users but have **no** project permissions.
 - **Comment author**: any user who commented on a photo; each has their own permissions (some may have lost access since commenting).
@@ -72,6 +77,7 @@ A superintendent ("supe") opens a single **Daily Log** for one of their projects
 One subgraph per domain. **Each subgraph owns its own SQLite file.** No subgraph reads another's database or imports another subgraph's code. Enforce this with a lint rule: `subgraphs/*` may import from `shared/` but never from another `subgraphs/*`.
 
 ### Stack
+
 - Node + TypeScript (strict), npm workspaces monorepo
 - `@apollo/server` + `@apollo/subgraph` per subgraph
 - Apollo Router via `rover dev` locally; `rover supergraph compose` + `router` binary as the "production-like" path
@@ -81,6 +87,7 @@ One subgraph per domain. **Each subgraph owns its own SQLite file.** No subgraph
 - No GraphQL codegen
 
 ### Repo layout
+
 ```
 daily-log-federation/
   router/
@@ -106,7 +113,9 @@ daily-log-federation/
 ```
 
 ### Observability is the whole point
+
 Every subgraph logs to stdout, prefixed with its name:
+
 - each incoming operation, and specifically each `_entities` call with **how many representations** it received
 - each SQL statement executed
 
@@ -120,19 +129,20 @@ Wire the logging in at the server/plugin level in `index.ts` and `shared/`, so i
 
 What each subgraph owns, as **tables only**. The GraphQL shape is mine to design.
 
-| Subgraph | Port | Scope | Tables |
-|---|---|---|---|
-| `users` | 4001 | global | `users(id, name, email, trade)` |
-| `auth` | 4002 | current user | none; reads `userId` from the propagated `Authorization` header (fake token is fine: `Bearer user-1`) |
-| `permissions` | 4003 | project | `project_memberships(user_id, project_id, role)`; role ∈ `SUPERINTENDENT`, `PROJECT_MANAGER`, `VIEWER` |
-| `daily-logs` | 4004 | project | `projects(id, name, latitude, longitude)`, `daily_logs(id, project_id, date, status, created_by)` |
-| `weather` | 4005 | daily log | `weather_observations(id, daily_log_id, observed_at, sky, temp_f, precipitation, wind_mph, is_delay)` |
-| `crews` | 4006 | project | `crew_members(id, project_id, user_id, role, added_at)` |
-| `notes` | 4007 | daily log | `notes(id, daily_log_id, author_id, body, created_at)` |
-| `photos` | 4008 | project (optionally attached to a log) | `photos(id, project_id, daily_log_id NULL, url, caption, taken_at, uploaded_by)` |
-| `comments` | 4009 | photo | `comments(id, photo_id, author_id, body, created_at)` |
+| Subgraph      | Port | Scope                                  | Tables                                                                                                 |
+| ------------- | ---- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `users`       | 4001 | global                                 | `users(id, name, email, trade)`                                                                        |
+| `auth`        | 4002 | current user                           | none; reads `userId` from the propagated `Authorization` header (fake token is fine: `Bearer user-1`)  |
+| `permissions` | 4003 | project                                | `project_memberships(user_id, project_id, role)`; role ∈ `SUPERINTENDENT`, `PROJECT_MANAGER`, `VIEWER` |
+| `daily-logs`  | 4004 | project                                | `projects(id, name, latitude, longitude)`, `daily_logs(id, project_id, date, status, created_by)`      |
+| `weather`     | 4005 | daily log                              | `weather_observations(id, daily_log_id, observed_at, sky, temp_f, precipitation, wind_mph, is_delay)`  |
+| `crews`       | 4006 | project                                | `crew_members(id, project_id, user_id, role, added_at)`                                                |
+| `notes`       | 4007 | daily log                              | `notes(id, daily_log_id, author_id, body, created_at)`                                                 |
+| `photos`      | 4008 | project (optionally attached to a log) | `photos(id, project_id, daily_log_id NULL, url, caption, taken_at, uploaded_by)`                       |
+| `comments`    | 4009 | photo                                  | `comments(id, photo_id, author_id, body, created_at)`                                                  |
 
 Notes for you:
+
 - `permissions` also needs a small **internal REST endpoint** outside the graph: `GET /internal/access?userId=&projectId=` → `{ allowed, role }`, plus a batch variant that takes many pairs. Build the endpoint; I'll decide how subgraphs use it.
 - `weather`: provide `src/fakeForecast.ts` with a deterministic `forecastFor(projectId, date): string`. Make the subgraph **artificially slow** with a configurable delay (env var, default 800ms) applied in the bootstrap.
 - `photos` are jobsite progress photos, not profile pictures. Use placeholder image URLs.
@@ -149,6 +159,7 @@ Eventually one operation (which I'll write) should return, for a given Daily Log
 ## Seed data
 
 Deterministic (fixed IDs; any randomness uses a fixed seed). Minimum:
+
 - 2 projects in different locations
 - ~10 users: 2 supes (one per project), 1 PM on both projects, crew members, and a couple of users with no memberships at all
 - 7 daily logs per project (one week)
@@ -173,6 +184,7 @@ I work through these in order. Your job per Level is only to make sure the scaff
 - **Level 6:** `crews`. Repetition to confirm the patterns stuck.
 
 ### Stretch goals (tie back to the NFRs)
+
 - `@defer` the slow weather block (high-latency jobsite tablets)
 - Persisted queries
 - Write-up of a client-side offline story (cached log, queued mutations)
@@ -192,6 +204,7 @@ npm run dev        # starts all subgraphs + rover dev (router on :4000)
 Local `rover` composition requires accepting Apollo's ELv2 license: set `APOLLO_ELV2_LICENSE=accept` in `.env`.
 
 Manual testing in Apollo Sandbox at `http://localhost:4000` with:
+
 ```json
 {
   "Authorization": "Bearer user-1"

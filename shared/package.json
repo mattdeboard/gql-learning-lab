@@ -1,0 +1,15 @@
+{
+  "name": "@lab/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./db": "./db.ts",
+    "./context": "./context.ts",
+    "./log": "./log.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.5.1",
+    "better-sqlite3": "^13.0.3",
+    "graphql": "^16.14.2"
+  }
+}

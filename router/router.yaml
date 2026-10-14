@@ -1,0 +1,33 @@
+# Apollo Router config, used by both `rover dev` (npm run dev) and the
+# standalone router binary (npm run compose -- run).
+
+supergraph:
+  listen: 127.0.0.1:4000
+  introspection: true
+
+# Apollo Sandbox at http://localhost:4000 instead of the default landing page.
+sandbox:
+  enabled: true
+homepage:
+  enabled: false
+
+# Forward the client's Authorization header to every subgraph.
+# Without this, subgraphs never see "Bearer user-1".
+headers:
+  all:
+    request:
+      operations:
+        - propagate:
+            named: authorization
+
+# Return the full subgraph error (message, path, extensions) to the client
+# instead of a generic "Subgraph errors redacted". Local learning only.
+include_subgraph_errors:
+  all: true
+
+# Query-plan exposure. Send the request header
+#   Apollo-Expose-Query-Plan: true      -> runs the operation and adds the plan to `extensions`
+#   Apollo-Expose-Query-Plan: dry-run   -> returns the plan without running anything
+# Apollo marks this config key experimental, so it may be renamed in a future router.
+plugins:
+  experimental.expose_query_plan: true

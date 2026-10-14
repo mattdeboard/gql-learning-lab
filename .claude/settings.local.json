@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm view *)",
+      "WebSearch",
+      "WebFetch(domain:www.apollographql.com)"
+    ]
+  }
+}

@@ -1,1 +1,7 @@
 node_modules/
+*.sqlite
+*.sqlite-*
+logs/*.log
+.env
+router/supergraph.yaml
+router/supergraph.graphql
