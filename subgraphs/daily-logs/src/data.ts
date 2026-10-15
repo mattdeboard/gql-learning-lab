@@ -37,8 +37,8 @@ export interface DailyLogEntity {
   createdBy: string; // user id
 }
 
-const getProjectTable = () => connection<ProjectEntity>('projects');
-const getDailyLogTable = () => connection<DailyLogEntity>('daily_logs');
+export const getProjectTable = () => connection<ProjectEntity>('projects');
+export const getDailyLogTable = () => connection<DailyLogEntity>('daily_logs');
 
 // ---------- projects ----------
 

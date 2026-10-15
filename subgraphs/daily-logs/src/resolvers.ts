@@ -6,28 +6,27 @@ import {
   type DailyLogQueryInput,
   deleteDailyLog,
   getDailyLogsBy,
-  getLogsForUser,
-  getProjectById,
   updateDailyLog,
   type UpdateDailyLogInput,
 } from './data.ts';
+import type { DailyLogsContext } from './context.ts';
 
 export const resolvers: Resolvers = {
   DailyLog: {
     createdBy: (log: DailyLogEntity) => {
       return { id: log.createdBy };
     },
-    project: (log: DailyLogEntity) => {
-      return getProjectById(log.projectId);
+    project: (log: DailyLogEntity, _args, { projectByIdLoader }: DailyLogsContext, _info) => {
+      return projectByIdLoader.load(log.projectId);
     },
   },
   Query: {
     dailyLogsBy: async (_root, { filters }: { filters: DailyLogQueryInput }) => {
       return getDailyLogsBy(filters);
     },
-    dailyLogsForCurrentUser: async (_root, _args, { userId }) => {
+    dailyLogsForCurrentUser: async (_root, _args, { userId, logsForUserLoader }: DailyLogsContext) => {
       if (!userId) return null;
-      return getLogsForUser(userId);
+      return logsForUserLoader.load(userId);
     },
   },
   Mutation: {

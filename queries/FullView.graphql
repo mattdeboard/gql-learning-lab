@@ -1,0 +1,32 @@
+query FullView($filters: DailyLogQueryInput!) {
+  dailyLogsBy(filters: $filters) {
+    id
+    date
+    status
+    createdBy {
+      name
+    }
+    project {
+      name
+    }
+    notes {
+      body
+      author {
+        name
+      }
+    }
+    photos {
+      url
+      caption
+      uploadedBy {
+        name
+      }
+      comments {
+        body
+        author {
+          name
+        }
+      }
+    }
+  }
+}

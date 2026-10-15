@@ -3,8 +3,8 @@ import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { buildSubgraphSchema, type GraphQLResolverMap } from '@apollo/subgraph';
 import { parse } from 'graphql';
-import { authFromHeaders, type AuthContext } from '@lab/shared/context';
 import { log, operationLogger } from '@lab/shared/log';
+import { getContext, type DailyLogsContext } from './context.ts';
 import { resolvers } from './resolvers.ts';
 
 const SUBGRAPH = 'daily-logs';
@@ -19,7 +19,7 @@ if (sdl.replace(/#.*$/gm, '').trim() === '') {
   process.exit(0);
 }
 
-const server = new ApolloServer<AuthContext>({
+const server = new ApolloServer<DailyLogsContext>({
   // The cast bridges our Resolvers type (shared/resolvers.ts), which types
   // __resolveReference correctly, to Apollo's looser GraphQLResolverMap.
   schema: buildSubgraphSchema([{ typeDefs: parse(sdl), resolvers: resolvers as GraphQLResolverMap }]),
@@ -28,7 +28,7 @@ const server = new ApolloServer<AuthContext>({
 
 const { url } = await startStandaloneServer(server, {
   listen: { port: PORT },
-  context: async ({ req }) => authFromHeaders(req.headers),
+  context: async ({ req }) => getContext(req.headers),
 });
 
 log(SUBGRAPH, 'info', `ready at ${url}`);
