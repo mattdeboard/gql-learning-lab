@@ -1,0 +1,14 @@
+query ProjectPhotos($projectId: ID!) {
+  projectPhotos(projectId: $projectId) {
+    url
+    uploadedBy {
+      email
+    }
+    project {
+      name
+    }
+    dailyLog {
+      id
+    }
+  }
+}

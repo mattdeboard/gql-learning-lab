@@ -3,10 +3,9 @@ import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { buildSubgraphSchema, type GraphQLResolverMap } from '@apollo/subgraph';
 import { parse } from 'graphql';
-import { type AuthContext } from '@lab/shared/context';
 import { log, operationLogger } from '@lab/shared/log';
 import { resolvers } from './resolvers.ts';
-import { getContext } from './context.ts';
+import { getContext, type UsersContext } from './context.ts';
 
 const SUBGRAPH = 'users';
 const PORT = 4001;
@@ -20,7 +19,7 @@ if (sdl.replace(/#.*$/gm, '').trim() === '') {
   process.exit(0);
 }
 
-const server = new ApolloServer<AuthContext>({
+const server = new ApolloServer<UsersContext>({
   // The cast bridges our Resolvers type (shared/resolvers.ts), which types
   // __resolveReference correctly, to Apollo's looser GraphQLResolverMap.
   schema: buildSubgraphSchema([{ typeDefs: parse(sdl), resolvers: resolvers as GraphQLResolverMap }]),

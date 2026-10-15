@@ -23,7 +23,7 @@ Matt is writing the GraphQL himself. That's the point of this project.
 - permission enforcement logic
 - the operations in `queries/`
 
-When scaffolding a new subgraph, leave `schema.graphql` as `# TODO(matt)` and `src/resolvers.ts` as `// TODO(matt)` plus `export const resolvers = {};` (the bootstrap imports it) and nothing more. Don't pre-write type names, fields, or directives in the stubs. Add the new stub schema to `.prettierignore` (a comment-only file isn't valid GraphQL).
+When scaffolding a new subgraph, leave `schema.graphql` as `# TODO(matt)` and `src/resolvers.ts` as `// TODO(matt)` plus `export const resolvers = {};` (the bootstrap imports it) and nothing more. Don't pre-write type names, fields, or directives in the stubs. Add the new stub schema to `.prettierignore` (a comment-only file isn't valid GraphQL). Also give it the context/loaders pair that `index.ts` imports: `src/loaders.ts` exporting an empty `LoaderContext = {}` type and a `loaderContext()` returning `{}`, and `src/context.ts` exporting `<Name>Context = AuthContext & LoaderContext` and `getContext(headers)` returning `{ ...authFromHeaders(headers), ...loaderContext() }`. Matt fills in the loaders; every subgraph follows this shape.
 
 **When Matt asks for help on his GraphQL code, act as a tutor, not an author.** Explain the error, explain the federation concept behind it, point at the line. Only write the fix if he explicitly asks. If composition fails, show the `rover` error verbatim first.
 
@@ -40,16 +40,17 @@ Per Level, Claude's job is only to make sure that Level's subgraphs exist and ru
 
 ### Deferred (Matt said "later"; bring it up when it becomes relevant, don't build unprompted)
 
-- **Operation runner** (deferred 2026-10-14): `npm run op queries/<name>.graphql` that sends a saved operation with its sibling `<name>.variables.json`, a persona flag for the `Authorization` header, and prints the response plus the query plan. The `plan()` function in `docs/log-parsing.md` can't send variables, so it can't run these files. Likely useful by Level 2, for the before/after SQL counts.
+(Nothing deferred right now.)
 
 ## How this repo works
 
 - **Node 24 is required** (`.nvmrc`). Node runs `.ts` files directly via type stripping, with no build step and no `tsx`. That means no `enum`, `namespace`, or parameter properties (`erasableSyntaxOnly`), and relative imports spell out `.ts`. If a command fails with `Unknown file extension ".ts"`, the shell is on the wrong Node: `nvm use`.
 - **Levels:** `scripts/subgraphs.ts` is the single list of subgraphs (name, port, Level). `LEVEL=n npm run dev` starts Levels 0..n and generates `router/supergraph.yaml` (gitignored). A stub subgraph exits cleanly and restarts when `schema.graphql` changes.
-- **Seed:** `scripts/world.ts` builds one deterministic world; each `subgraphs/*/db/seed.ts` writes only its own tables. `npm run seed` wipes and reseeds all of them and prints the persona table. Seeds use `better-sqlite3` directly (they need multi-statement `schema.sql`).
+- **Seed:** `scripts/world.ts` builds one deterministic world; each `subgraphs/*/db/seed.ts` writes only its own tables. `npm run seed` wipes and reseeds all of them and prints the persona table; `npm run seed -- notes photos` reseeds only the named subgraphs. Seeds use `better-sqlite3` directly (they need multi-statement `schema.sql`).
 - **Data access:** `shared/db.ts` returns a knex connection. Table getters are `connection<Entity>('table')` (not `.table<Entity>()`, which types results as `any`), with `.where()` before `.first()`. knex maps names both ways: code uses camelCase (`projectId`), the database uses snake_case (`project_id`). Entity interfaces in `data.ts` are camelCase.
 - **IDs:** seeded rows have readable IDs (`user-1`, `log-3`); runtime-created rows use `generateId('log')` from `shared/ids.ts` (prefixed UUID).
 - **Resolver types:** `shared/resolvers.ts` exports `Resolvers<{ Entity: { keyFields } }, TContext>`. The entity map mirrors each `@key` by hand. Each bootstrap casts `resolvers as GraphQLResolverMap` for `buildSubgraphSchema`.
 - **Boundaries:** a subgraph may import `@lab/shared/*` but never another subgraph (enforced by ESLint). Only `scripts/` knows about every domain.
 - **Logging:** every line is `time [subgraph] kind message`, where kind is `op`, `entities`, `sql` or `info`. Recipes are in `docs/log-parsing.md`. Keep that doc in sync if the format changes.
+- **Running saved operations:** `npm run op -- queries/<name>.graphql [--as user-9|none] [--vars <json>]` (`scripts/op.ts`) sends the operation with its sibling `<name>.variables.json`, then prints the plan, the response, and the subgraph log lines and counts it produced (when `logs/dev.log` exists).
 - **Before committing:** `npm run check` (typecheck, type-aware lint, Prettier).

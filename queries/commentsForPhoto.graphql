@@ -1,0 +1,20 @@
+query CommentsForPhoto($photoId: ID!) {
+  commentsForPhoto(photoId: $photoId) {
+    body
+    photo {
+      url
+      project {
+        id
+      }
+      uploadedBy {
+        email
+      }
+      dailyLog {
+        id
+      }
+      comments {
+        body
+      }
+    }
+  }
+}

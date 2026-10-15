@@ -91,6 +91,7 @@ scripts/
   seed-all.ts  dev.ts  write-supergraph-config.ts  compose.sh
 docs/
   log-parsing.md           # grep/awk recipes for the logs
+  service-ownership.md     # working as the owner of one subgraph: contracts, roles, habits
 ```
 
 ### Observability is the whole point
@@ -179,6 +180,7 @@ nvm use               # Node 24 (from .nvmrc)
 npm install
 npm run rover:install # once per machine: rover's router + composition plugins
 npm run seed          # wipe and reseed every database; prints which Bearer token is which persona
+npm run seed -- notes # reseed only the named subgraph(s); the rest keep their data
 npm run dev           # subgraphs for LEVEL=0 + rover dev (router on :4000)
 LEVEL=2 npm run dev   # Levels 0 through 2
 npm run dev:log       # same as dev, also writes logs/dev.log
@@ -194,6 +196,14 @@ Manual testing in Apollo Sandbox at `http://localhost:4000` with:
   "Apollo-Expose-Query-Plan": "true"
 }
 ```
+
+Run a saved operation from `queries/` and see its plan, response, and the SQL/`_entities` lines it caused:
+
+```bash
+npm run op -- queries/dailyLogsBy.graphql --as user-2 --vars '{"filters": {"status": "DRAFT"}}'
+```
+
+Variables default to a sibling `dailyLogsBy.variables.json`; `--as none` sends no `Authorization` header. The log section needs `npm run dev:log` running.
 
 Each subgraph is independently startable: `npm run dev -w subgraphs/notes`.
 

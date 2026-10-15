@@ -1,0 +1,22 @@
+type Comment @key(fields: "id") {
+  id: ID!
+  photo: Photo
+  author: User
+  body: String!
+  createdAt: String!
+}
+
+type Photo @key(fields: "id") {
+  id: ID!
+  comments: [Comment]
+}
+
+type User @key(fields: "id") {
+  id: ID!
+  comments: [Comment]
+}
+
+type Query {
+  commentsForPhoto(photoId: ID!): [Comment]
+  commentsForUser(userId: ID!): [Comment]
+}

@@ -1,0 +1,55 @@
+type Photo @key(fields: "id") {
+  id: ID!
+  project: Project!
+  dailyLog: DailyLog
+  url: String!
+  caption: String
+  takenAt: String!
+  uploadedBy: User!
+}
+
+type Project @key(fields: "id") {
+  id: ID!
+  photos: [Photo]
+}
+
+type DailyLog @key(fields: "id") {
+  id: ID!
+  photos: [Photo]
+}
+
+type User @key(fields: "id") {
+  id: ID!
+  photos: [Photo]
+}
+
+type Query {
+  projectPhotos(projectId: ID!): [Photo]
+  dailyLogPhotos(dailyLogId: ID!): [Photo]
+  userPhotos(userId: ID!): [Photo]
+}
+
+input PhotoUploadInput {
+  projectId: ID!
+  dailyLogId: ID
+  caption: String
+  url: String!
+  takenAt: String!
+  uploadedBy: String!
+}
+
+input PhotoUpdateInput {
+  id: ID!
+  caption: String
+  url: String
+  projectId: ID
+  dailyLogId: ID
+}
+
+type Mutation {
+  addPhoto(input: PhotoUploadInput!): Photo
+  deletePhoto(id: ID!): Photo
+  updatePhoto(input: PhotoUpdateInput!): Photo
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])

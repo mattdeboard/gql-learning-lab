@@ -1,5 +1,6 @@
-// Wipes and reseeds every scaffolded subgraph's SQLite file from one shared world.
-//   npm run seed
+// Wipes and reseeds subgraph SQLite files from one shared world.
+//   npm run seed                      # every scaffolded subgraph
+//   npm run seed -- photos comments   # only these; the other databases are left alone
 
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import Database from 'better-sqlite3';
@@ -11,10 +12,23 @@ type SeedModule = { seed: (db: Database.Database, world: World) => void };
 
 const world = buildWorld();
 
-for (const { name } of SUBGRAPHS) {
+// Subgraph names given on the command line, or all of them.
+const requested = process.argv.slice(2);
+const unknown = requested.filter((name) => !SUBGRAPHS.some((subgraph) => subgraph.name === name));
+if (unknown.length > 0) {
+  console.error(`Unknown subgraph: ${unknown.join(', ')}. Known: ${SUBGRAPHS.map((s) => s.name).join(', ')}`);
+  process.exit(1);
+}
+const toSeed = requested.length > 0 ? SUBGRAPHS.filter(({ name }) => requested.includes(name)) : SUBGRAPHS;
+
+for (const { name } of toSeed) {
   const dir = new URL(`../subgraphs/${name}/db/`, import.meta.url);
   const schemaFile = new URL('schema.sql', dir);
-  if (!existsSync(schemaFile)) continue; // no tables (auth) or not scaffolded yet
+  if (!existsSync(schemaFile)) {
+    // No tables (auth) or not scaffolded yet. Only worth mentioning if it was asked for by name.
+    if (requested.includes(name)) console.log(`skipped ${name}: no db/schema.sql`);
+    continue;
+  }
 
   const dbFile = new URL(`${name}.sqlite`, dir);
   rmSync(dbFile, { force: true });
