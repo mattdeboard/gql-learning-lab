@@ -11,7 +11,7 @@ export interface CommentEntity {
   createdAt: string;
 }
 
-const getCommentTable = () => connection<CommentEntity>('comments');
+export const getCommentTable = () => connection<CommentEntity>('comments');
 
 export async function getCommentById(id: string) {
   return await getCommentTable().where({ id }).first();

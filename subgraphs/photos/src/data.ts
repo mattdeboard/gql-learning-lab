@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { openDb } from '@lab/shared/db';
+import { generateId } from '@lab/shared/ids';
 
 const connection = openDb('photos', fileURLToPath(new URL('../db/photos.sqlite', import.meta.url)));
 
@@ -13,7 +14,24 @@ export interface PhotoEntity {
   uploadedBy: string; // a user owned by the users subgraph
 }
 
-const getPhotoTable = () => connection<PhotoEntity>('photos');
+export type PhotoUploadInput = {
+  projectId: string;
+  dailyLogId?: string;
+  caption?: string;
+  url: string;
+  takenAt: string;
+  uploadedBy: string;
+};
+
+export type PhotoUpdateInput = {
+  id: string;
+  caption?: string;
+  url?: string;
+  projectId?: string;
+  dailyLogId?: string;
+};
+
+export const getPhotoTable = () => connection<PhotoEntity>('photos');
 
 export async function getPhotoById(id: string) {
   return await getPhotoTable().where({ id }).first();
@@ -38,4 +56,30 @@ export async function getPhotosByDailyLogIds(dailyLogIds: readonly string[]) {
 // Every photo on a project, including ones not attached to any daily log.
 export async function getPhotosByProjectId(projectId: string) {
   return await getPhotoTable().select().where({ projectId }).orderBy('takenAt');
+}
+
+export async function addPhoto(input: PhotoUploadInput) {
+  const { caption = '', dailyLogId = null } = input;
+  const photo: PhotoEntity = {
+    id: generateId('photo'),
+    ...input,
+    caption,
+    dailyLogId,
+  };
+  await getPhotoTable().insert(photo);
+  return photo;
+}
+
+export async function deletePhoto(id: string) {
+  const photo = await getPhotoTable().select().where('id', id);
+  if (!photo) return null;
+  await getPhotoTable().delete().where('id', id);
+  return photo;
+}
+
+export async function updatePhoto(input: PhotoUpdateInput) {
+  const photo = await getPhotoTable().select().where('id', input.id);
+  if (!photo) return null;
+  const updateFields = Object.entries(input).filter(([k, v]) => k !== 'id' && v !== undefined);
+  await getPhotoTable().update(Object.fromEntries(updateFields)).where('id', input.id);
 }
