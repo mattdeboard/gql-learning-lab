@@ -1,10 +1,13 @@
-import DataLoader from 'dataloader';
-import { getNoteTable } from './data.ts';
+import type DataLoader from 'dataloader';
+import { groupedLoader } from '@lab/shared/loaders';
+import { getNoteTable, type NoteEntity } from './data.ts';
 
-export function createNotesByDailyLogIdDataLoader() {
-  return new DataLoader(async (ids: readonly string[]) => {
-    const notes = await getNoteTable().select().whereIn('dailyLogId', ids);
-    const groups = Map.groupBy(notes, (note) => note.dailyLogId);
-    return ids.map((id) => groups.get(id) ?? []);
-  });
+export type LoaderContext = {
+  notesByLogId: DataLoader<string, NoteEntity[], string>;
+};
+
+export function loaderContext(): LoaderContext {
+  return {
+    notesByLogId: groupedLoader(getNoteTable, 'dailyLogId'),
+  };
 }

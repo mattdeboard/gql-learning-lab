@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader';
+import { groupedLoader } from '@lab/shared/loaders';
 import { getDailyLogTable, getProjectTable, type DailyLogEntity, type ProjectEntity } from './data.ts';
 
 const _GROUP_LOADERS = ['logsForProjectLoader', 'logsForUserLoader'] as const;
@@ -12,8 +13,8 @@ export type LoaderContext = {
 
 export function loaderContext(): LoaderContext {
   return {
-    logsForProjectLoader: logDataLoaderBy('projectId'),
-    logsForUserLoader: logDataLoaderBy('createdBy'),
+    logsForProjectLoader: groupedLoader(getDailyLogTable, 'projectId'),
+    logsForUserLoader: groupedLoader(getDailyLogTable, 'createdBy'),
     logByIdLoader: logByIdLoader(),
     projectByIdLoader: projectByIdLoader(),
   };
@@ -32,13 +33,5 @@ function projectByIdLoader() {
     const projects = await getProjectTable().select().whereIn('id', ids);
     const map = new Map(projects.map((pj) => [pj.id, pj]));
     return ids.map((id) => map.get(id) ?? null);
-  });
-}
-
-function logDataLoaderBy(field: keyof DailyLogEntity) {
-  return new DataLoader(async (ids: readonly string[]) => {
-    const logs = await getDailyLogTable().select().whereIn(field, ids);
-    const groups = Map.groupBy(logs, (log) => log[field]);
-    return ids.map((id) => groups.get(id) ?? []);
   });
 }

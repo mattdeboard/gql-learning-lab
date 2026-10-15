@@ -1,6 +1,6 @@
 import type { Resolvers } from '@lab/shared/resolvers';
 import { getNoteById, getNotesByDailyLogId, type NoteEntity } from './data.ts';
-import { createNotesByDailyLogIdDataLoader } from './loaders.ts';
+import type { NotesContext } from './context.ts';
 
 export const resolvers: Resolvers<{ Note: { id: string }; DailyLog: { id: string } }> = {
   Note: {
@@ -12,11 +12,7 @@ export const resolvers: Resolvers<{ Note: { id: string }; DailyLog: { id: string
     },
   },
   DailyLog: {
-    notes: (
-      { id }: { id: string },
-      _args,
-      { notesByLogId }: { notesByLogId: ReturnType<typeof createNotesByDailyLogIdDataLoader> },
-    ) => {
+    notes: ({ id }: { id: string }, _args, { notesByLogId }: NotesContext) => {
       return notesByLogId.load(id);
     },
     __resolveReference: async ({ id }) => {

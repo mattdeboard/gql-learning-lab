@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader';
+import { groupedLoader } from '@lab/shared/loaders';
 import { type PhotoEntity, getPhotoTable } from './data.ts';
 
 const _GROUP_LOADERS = ['photosByProjectLoader', 'photosByDailyLogLoader', 'photosByUserLoader'] as const;
@@ -8,9 +9,9 @@ export type LoaderContext = {
 
 export function loaderContext(): LoaderContext {
   return {
-    photosByDailyLogLoader: photosByLoader('dailyLogId'),
-    photosByProjectLoader: photosByLoader('projectId'),
-    photosByUserLoader: photosByLoader('uploadedBy'),
+    photosByDailyLogLoader: groupedLoader(getPhotoTable, 'dailyLogId'),
+    photosByProjectLoader: groupedLoader(getPhotoTable, 'projectId'),
+    photosByUserLoader: groupedLoader(getPhotoTable, 'uploadedBy'),
     photosByIdLoader: photosByIdLoader(),
   };
 }
@@ -20,13 +21,5 @@ function photosByIdLoader() {
     const photos = await getPhotoTable().select().whereIn('id', ids);
     const map = new Map(photos.map((p) => [p.id, p]));
     return ids.map((id) => map.get(id) ?? null);
-  });
-}
-
-function photosByLoader(field: keyof PhotoEntity) {
-  return new DataLoader(async (ids: readonly string[]) => {
-    const photos = await getPhotoTable().select().whereIn(field, ids);
-    const groups = Map.groupBy(photos, (photo) => photo[field]);
-    return ids.map((id) => groups.get(id) ?? []);
   });
 }

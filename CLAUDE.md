@@ -23,7 +23,7 @@ Matt is writing the GraphQL himself. That's the point of this project.
 - permission enforcement logic
 - the operations in `queries/`
 
-When scaffolding a new subgraph, leave `schema.graphql` as `# TODO(matt)` and `src/resolvers.ts` as `// TODO(matt)` plus `export const resolvers = {};` (the bootstrap imports it) and nothing more. Don't pre-write type names, fields, or directives in the stubs. Add the new stub schema to `.prettierignore` (a comment-only file isn't valid GraphQL). Also give it a minimal `src/context.ts` (`<Name>Context = AuthContext` and a `getContext(headers)` returning `authFromHeaders(headers)`), which `index.ts` imports. Matt adds his per-request loaders there.
+When scaffolding a new subgraph, leave `schema.graphql` as `# TODO(matt)` and `src/resolvers.ts` as `// TODO(matt)` plus `export const resolvers = {};` (the bootstrap imports it) and nothing more. Don't pre-write type names, fields, or directives in the stubs. Add the new stub schema to `.prettierignore` (a comment-only file isn't valid GraphQL). Also give it the context/loaders pair that `index.ts` imports: `src/loaders.ts` exporting an empty `LoaderContext = {}` type and a `loaderContext()` returning `{}`, and `src/context.ts` exporting `<Name>Context = AuthContext & LoaderContext` and `getContext(headers)` returning `{ ...authFromHeaders(headers), ...loaderContext() }`. Matt fills in the loaders; every subgraph follows this shape.
 
 **When Matt asks for help on his GraphQL code, act as a tutor, not an author.** Explain the error, explain the federation concept behind it, point at the line. Only write the fix if he explicitly asks. If composition fails, show the `rover` error verbatim first.
 

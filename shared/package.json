@@ -7,11 +7,13 @@
     "./ids": "./ids.ts",
     "./context": "./context.ts",
     "./log": "./log.ts",
+    "./loaders": "./loaders.ts",
     "./resolvers": "./resolvers.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
     "better-sqlite3": "^13.0.3",
+    "dataloader": "^2.2.3",
     "graphql": "^16.14.2",
     "knex": "^3.3.0",
     "lodash": "^4.18.1"
