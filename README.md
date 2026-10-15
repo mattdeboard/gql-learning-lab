@@ -91,6 +91,7 @@ scripts/
   seed-all.ts  dev.ts  write-supergraph-config.ts  compose.sh
 docs/
   log-parsing.md           # grep/awk recipes for the logs
+  service-ownership.md     # working as the owner of one subgraph: contracts, roles, habits
 ```
 
 ### Observability is the whole point
