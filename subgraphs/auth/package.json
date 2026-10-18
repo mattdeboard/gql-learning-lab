@@ -1,0 +1,14 @@
+{
+  "name": "@lab/auth",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch-path=src --watch-path=schema.graphql --watch-path=../../shared src/index.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.5.1",
+    "@apollo/subgraph": "^2.15.1",
+    "dataloader": "^2.2.3",
+    "graphql": "^16.14.2"
+  }
+}
