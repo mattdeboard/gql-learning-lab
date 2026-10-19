@@ -1,14 +1,17 @@
 import type { IncomingHttpHeaders } from 'node:http';
-import { authFromHeaders, type AuthContext } from '@lab/shared/context';
+import { authFromHeaders, authzContext, type AuthContext, type AuthzContext } from '@lab/shared/context';
 import { loaderContext, type LoaderContext } from './loaders.ts';
 
 // Everything a daily-logs resolver receives as `context`. getContext runs once per
 // request, so anything created here (e.g. loaders) is fresh for each request.
-export type DailyLogsContext = AuthContext & LoaderContext;
+export type DailyLogsContext = AuthContext & LoaderContext & AuthzContext;
 
-export function getContext(headers: IncomingHttpHeaders): DailyLogsContext {
+export async function getContext(headers: IncomingHttpHeaders): Promise<DailyLogsContext> {
+  const { userId } = authFromHeaders(headers);
+  const authz = await authzContext(userId, 'daily-logs');
   return {
-    ...authFromHeaders(headers),
+    userId,
     ...loaderContext(),
+    ...authz,
   };
 }

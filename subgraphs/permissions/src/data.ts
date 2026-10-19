@@ -1,11 +1,10 @@
 import { fileURLToPath } from 'node:url';
 import { openDb } from '@lab/shared/db';
+import type { ResourcePermission } from '@lab/shared/permissions/client';
 
 const connection = openDb('permissions', fileURLToPath(new URL('../db/permissions.sqlite', import.meta.url)));
 
 export type Role = 'SUPERINTENDENT' | 'PROJECT_MANAGER' | 'VIEWER';
-
-export type Permission = 'create' | 'read' | 'update' | 'delete';
 
 export interface MembershipEntity {
   userId: string; // a user owned by the users subgraph
@@ -17,7 +16,7 @@ export interface PermissionEntity {
   id: number;
   role: Role;
   projectId: string;
-  permissionName: `${Permission}:${string}`;
+  permissionName: ResourcePermission;
 }
 
 export type User = {
@@ -29,6 +28,8 @@ export type UserAllowedForProjectInput = {
   userId: string;
   projectId: string;
 };
+
+export type UserPermissions = Map<string, PermissionEntity[]>;
 
 export const getMembershipTable = () => connection<MembershipEntity>('project_memberships');
 export const getPermissionsTable = () => connection<PermissionEntity>('permissions');
@@ -79,7 +80,7 @@ export async function getRoleForProject(userId: string | null, projectId: string
   return membership?.role ?? null;
 }
 
-export async function getPermissionsForUser(userId: string): Promise<Map<string, PermissionEntity[]>> {
+export async function getPermissionsForUser(userId: string): Promise<UserPermissions> {
   const memberships = await getMembershipsByUserId(userId);
   if (!memberships.length) return new Map();
   const projects = memberships.reduce(

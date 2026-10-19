@@ -1,4 +1,4 @@
-import type { Resolvers } from '@lab/shared/resolvers';
+import { authnCheck, type Resolvers } from '@lab/shared/resolvers';
 import {
   createDailyLog,
   type CreateDailyLogInput,
@@ -11,6 +11,7 @@ import {
 } from './data.ts';
 import type { DailyLogsContext } from './context.ts';
 import { createSubgraphLogger } from '@lab/shared/log';
+import { GraphQLError } from 'graphql';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const LOGGER = createSubgraphLogger('daily-logs');
@@ -39,16 +40,48 @@ export const resolvers: Resolvers<Record<'Project', { id: string }>, DailyLogsCo
     },
   },
   Mutation: {
-    createLog: async (_root, { options }: { options: CreateDailyLogInput }) => {
-      // TODO: Replace hard-coded user ID with auth middleware + context
-      return createDailyLog('user-1', options);
+    createLog: async (_root, { options }: { options: CreateDailyLogInput }, { authzCheck, userId }) => {
+      if (authnCheck(userId) && authzCheck(options.projectId, ['create:daily-logs'])) {
+        return createDailyLog(userId, options);
+      }
     },
-    deleteLog: async (_root, { id }: { id: string }) => {
-      // TODO: Authn (auth middleware + context)
-      return deleteDailyLog(id);
+    deleteLog: async (_root, { id }: { id: string }, { authzCheck, logByIdLoader, userId }) => {
+      const log = await logByIdLoader.load(id);
+      if (log === null) {
+        throw new GraphQLError(`Daily Log with ID ${id} not found`, {
+          extensions: {
+            code: 'NOT_FOUND',
+            http: {
+              status: 404,
+            },
+          },
+        });
+      }
+
+      if (authnCheck(userId) && authzCheck(log.projectId, ['delete:daily-logs'])) {
+        return deleteDailyLog(id);
+      }
     },
-    updateLog: async (_root, { options }: { options: UpdateDailyLogInput }) => {
-      return updateDailyLog(options);
+    updateLog: async (
+      _root,
+      { options }: { options: UpdateDailyLogInput },
+      { authzCheck, logByIdLoader, userId },
+    ) => {
+      const log = await logByIdLoader.load(options.id);
+      if (log === null) {
+        throw new GraphQLError(`Daily Log with ID ${options.id} not found`, {
+          extensions: {
+            code: 'NOT_FOUND',
+            http: {
+              status: 404,
+            },
+          },
+        });
+      }
+
+      if (authnCheck(userId) && authzCheck(log.projectId, ['update:daily-logs'])) {
+        return updateDailyLog(options);
+      }
     },
   },
 };

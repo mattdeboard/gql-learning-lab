@@ -134,7 +134,7 @@ There are some decisions I've made I want to document around the design of the p
 In a real scenario, we would want our Permissions service to support registration of entity permissions. So some arbitrary service, e.g. "Frogs service" ("Frog" is just an arbitrary noun here), would be able to register resource permissions like:
 
 ```ts
-`${'create' | 'read' | 'update' | 'delete'}:frog`
+`${'create' | 'read' | 'update' | 'delete'}:frog`;
 ```
 
 This registration would simply be an HTTP POST something like:

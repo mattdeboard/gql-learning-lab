@@ -3,7 +3,7 @@ import PermissionsApiClient from '@lab/shared/permissions/client';
 import { createOrUpdateMembership, type MembershipEntity } from './data.ts';
 import type { PermissionsContext } from './context.ts';
 
-const permsClient = new PermissionsApiClient();
+const permsClient = new PermissionsApiClient('permissions');
 
 export const resolvers: Resolvers<Record<never, never>, PermissionsContext> = {
   Membership: {

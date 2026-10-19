@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from 'node:http';
 import { authFromHeaders, type AuthContext } from '@lab/shared/context';
 import { loaderContext, type LoaderContext } from './loaders.ts';
-import { getPermissionsForUser, type PermissionEntity, type Role } from './data.ts';
+import { getPermissionsForUser, type Role, type UserPermissions } from './data.ts';
 import { createSubgraphLogger, type Logger } from '@lab/shared/log';
 
 // Everything a permissions resolver receives as `context`. getContext runs once per
@@ -10,12 +10,12 @@ export type PermissionsContext = AuthContext &
   LoaderContext & {
     getMyRoleForProject: (projectId: string) => Role | null;
     logger: Logger;
-    permissions: Map<string, PermissionEntity[]>;
+    permissions: UserPermissions;
   };
 
 export async function getContext(headers: IncomingHttpHeaders): Promise<PermissionsContext> {
   const { userId } = authFromHeaders(headers);
-  const permissions = new Map<string, PermissionEntity[]>();
+  const permissions: UserPermissions = new Map();
   const context = {
     userId,
     ...loaderContext(),
