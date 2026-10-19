@@ -1,30 +1,29 @@
 import type { IncomingHttpHeaders } from 'node:http';
-import { authFromHeaders, type AuthContext } from '@lab/shared/context';
-import { loaderContext, type LoaderContext } from './loaders.ts';
-import { getPermissionsForUser, type Role, type UserPermissions } from './data.ts';
-import { createSubgraphLogger, type Logger } from '@lab/shared/log';
+import { createContext } from '@lab/shared/context';
+import { loaderContext } from './loaders.ts';
+import type { ResourcePermission } from '@lab/shared/permissions/client';
+import { getPermissionsForUser } from './data.ts';
 
 // Everything a permissions resolver receives as `context`. getContext runs once per
 // request, so anything created here (e.g. loaders) is fresh for each request.
-export type PermissionsContext = AuthContext &
-  LoaderContext & {
-    getMyRoleForProject: (projectId: string) => Role | null;
-    logger: Logger;
-    permissions: UserPermissions;
-  };
+export type PermissionsContext = Awaited<ReturnType<typeof getContext>>;
 
-export async function getContext(headers: IncomingHttpHeaders): Promise<PermissionsContext> {
-  const { userId } = authFromHeaders(headers);
-  const permissions: UserPermissions = new Map();
-  const context = {
-    userId,
-    ...loaderContext(),
-    logger: createSubgraphLogger('permissions'),
-    permissions,
-    getMyRoleForProject: (projectId: string) =>
-      permissions.get(projectId)?.find((perm) => perm.projectId === projectId)?.role ?? null,
+export async function getContext(headers: IncomingHttpHeaders) {
+  const loaders = loaderContext();
+  const getPermissions = async (userId: string | null) => {
+    if (!userId) return {};
+    const perms = await getPermissionsForUser(userId);
+    const entries = perms.entries();
+    const permissions: Record<string, ResourcePermission[]> = {};
+    for (const [projectId, perms] of entries) {
+      permissions[projectId] = perms.map((p) => p.permissionName);
+    }
+    return permissions;
   };
-  if (!userId) return context;
-  context.permissions = await getPermissionsForUser(userId);
-  return context;
+  const ctx = await createContext(headers, 'permissions', loaders, getPermissions);
+
+  return {
+    ...ctx,
+    getPermissions,
+  };
 }

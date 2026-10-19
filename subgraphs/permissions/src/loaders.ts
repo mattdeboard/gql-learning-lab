@@ -3,13 +3,9 @@
 
 import { groupedLoader } from '@lab/shared/loaders';
 import { getMembershipTable, type MembershipEntity } from './data.ts';
-import type DataLoader from 'dataloader';
+import DataLoader from 'dataloader';
 
-const _GROUP_LOADERS = [
-  'membershipsByUserIdLoader',
-  'membershipsByProjectIdLoader',
-  // 'rolesByProjectIdLoader',
-] as const;
+const _GROUP_LOADERS = ['membershipsByUserIdLoader', 'membershipsByProjectIdLoader'] as const;
 
 export type LoaderContext = {
   [key in (typeof _GROUP_LOADERS)[number]]: DataLoader<string, MembershipEntity[], string>;

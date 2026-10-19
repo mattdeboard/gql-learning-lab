@@ -1,5 +1,9 @@
 import type { IncomingHttpHeaders } from 'node:http';
-import PermissionsApiClient, { type ResourcePermission } from './permissions/client.ts';
+import PermissionsApiClient, {
+  type ResourcePermission,
+  type UserResourcePermissionsForProject,
+} from './permissions/client.ts';
+import { createSubgraphLogger, type Logger } from './log.ts';
 
 export type AuthContext = {
   // null when the request has no usable Authorization header
@@ -7,9 +11,18 @@ export type AuthContext = {
 };
 
 export type AuthzContext = {
-  authzCheck: (projectId: string, permissionsAllowList: ResourcePermission[]) => boolean;
-  permissions: Record<string, ResourcePermission[]>;
+  authzCheck: (projectId: string, permissionsAllowList: ResourcePermission[]) => Promise<boolean>;
+  getPermissions: () => Promise<UserResourcePermissionsForProject>;
 };
+
+export type LoggerContext = {
+  logger: Logger;
+};
+
+export type SubgraphContext<TContext extends Record<string, unknown>> = AuthContext &
+  AuthzContext &
+  LoggerContext &
+  TContext;
 
 // Reads the Authorization header the router propagates to every subgraph.
 // Tokens are fake: "Bearer user-1" means the caller is user-1.
@@ -19,8 +32,27 @@ export function authFromHeaders(headers: IncomingHttpHeaders): AuthContext {
   return { userId: match?.[1] ?? null };
 }
 
-export async function authzContext(userId: string | null, subgraph: string): Promise<AuthzContext> {
+function lazy<T>(load: () => Promise<T>): () => Promise<T> {
+  let promise: Promise<T> | undefined;
+  return () => (promise ??= load());
+}
+
+export async function createContext<TContext extends Record<string, unknown>>(
+  headers: IncomingHttpHeaders,
+  subgraph: string,
+  additionalContext: TContext,
+  getPermissionsFn?: (userId: string) => Promise<UserResourcePermissionsForProject>,
+): Promise<SubgraphContext<TContext>> {
+  const { userId } = authFromHeaders(headers);
   const permsApiClient = new PermissionsApiClient(subgraph);
-  const permissions = userId !== null ? await permsApiClient.getResourcePermsForUser(userId) : {};
-  return { permissions, authzCheck: permsApiClient.authzCheck.bind(permsApiClient, permissions) };
+  const source = getPermissionsFn ?? ((id: string) => permsApiClient.getResourcePermsForUser(id));
+  const getPermissions = lazy(() => (userId === null ? Promise.resolve({}) : source(userId)));
+  return {
+    logger: createSubgraphLogger(subgraph),
+    userId,
+    getPermissions,
+    authzCheck: async (projectId, needed) =>
+      permsApiClient.authzCheck(await getPermissions(), projectId, needed),
+    ...additionalContext,
+  };
 }

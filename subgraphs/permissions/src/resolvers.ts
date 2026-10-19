@@ -1,9 +1,6 @@
 import { authnCheck, type Resolvers } from '@lab/shared/resolvers';
-import PermissionsApiClient from '@lab/shared/permissions/client';
 import { createOrUpdateMembership, type MembershipEntity } from './data.ts';
 import type { PermissionsContext } from './context.ts';
-
-const permsClient = new PermissionsApiClient('permissions');
 
 export const resolvers: Resolvers<Record<never, never>, PermissionsContext> = {
   Membership: {
@@ -30,16 +27,10 @@ export const resolvers: Resolvers<Record<never, never>, PermissionsContext> = {
     memberships: async (
       { id }: { id: string },
       _args,
-      { userId, membershipsByProjectIdLoader, permissions },
+      { authzCheck, userId, membershipsByProjectIdLoader },
     ) => {
-      if (authnCheck(userId) && permsClient.authzCheck(permissions, id, ['read:memberships'])) {
+      if (authnCheck(userId) && (await authzCheck(id, ['read:memberships']))) {
         return membershipsByProjectIdLoader.load(id);
-      }
-      return null;
-    },
-    myRole: async ({ id }: { id: string }, _args, { getMyRoleForProject, userId }) => {
-      if (authnCheck(userId)) {
-        return getMyRoleForProject(id);
       }
       return null;
     },
@@ -48,12 +39,11 @@ export const resolvers: Resolvers<Record<never, never>, PermissionsContext> = {
     createOrUpdateMembership: async (
       _root,
       { input }: { input: MembershipEntity },
-      { userId, permissions },
+      { authzCheck, userId },
     ) => {
-      // Only project superintendent can create/update memberships for the project
       if (
         authnCheck(userId) &&
-        permsClient.authzCheck(permissions, input.projectId, ['create:memberships', 'update:memberships'])
+        (await authzCheck(input.projectId, ['create:memberships', 'update:memberships']))
       ) {
         return createOrUpdateMembership(input.userId, input.projectId, input.role);
       }
