@@ -34,6 +34,13 @@ export const resolvers: Resolvers<Record<never, never>, PermissionsContext> = {
       }
       return null;
     },
+    myRole: async ({ id }: { id: string }, _args, { membershipsByUserIdLoader, userId }) => {
+      if (authnCheck(userId)) {
+        const memberships = await membershipsByUserIdLoader.load(userId);
+        return memberships.find((m) => m.projectId === id)?.role ?? null;
+      }
+      return null;
+    },
   },
   Mutation: {
     createOrUpdateMembership: async (
