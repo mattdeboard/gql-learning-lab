@@ -43,6 +43,22 @@ Some questions apply only to the subgraph whose database _creates_ an entity's i
 - What's my key? Other teams store it in their tables, so changing it breaks composition for _them_.
 - What should `__resolveReference` cost? I don't control how often, or with how many references, the router calls it.
 
+### What `__resolveReference` should return
+
+**Owners load the row; extenders pass the key through.**
+
+`__resolveReference` turns the key the router sends (`{ __typename: "Project", id: "project-1" }`) into the object that the rest of your resolvers for that type receive as their parent. What it should return depends on whether your subgraph has the rows:
+
+| Your subgraph…                                                   | `__resolveReference` returns                                               | Example                                               |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **owns the rows** (the type's own fields live in your database)  | the loaded row, via a by-id loader                                         | daily-logs' `Project`, users' `User`, photos' `Photo` |
+| **only extends the type** (you add fields computed from the key) | the reference itself, `{ id }` (also the default if you omit the resolver) | notes' `DailyLog`, permissions' `User` and `Project`  |
+
+The two ways to get it wrong look different:
+
+- **An owner returning `{ id }`:** the router asks for `name`, the default resolver reads `{ id }.name`, and you get `null` (or a non-null error). In the logs: an `entities` line with no `sql` line after it.
+- **An extender loading data in `__resolveReference`:** whatever it returns becomes the parent object, so returning, say, the notes array makes the "DailyLog" an array and `DailyLog.notes` comes back empty or `null` (Level 1). The lookup belongs in the field resolver (`DailyLog.notes`).
+
 We call that subgraph the entity's "owner," but in Federation 2 that's a team convention, not something the schema records. Every subgraph that declares `DailyLog @key(fields: "id")` is a peer contributor to the same entity; there's no `extend type` distinction anymore. The key is the only thing they share.
 
 ## Three graphs that service arrows squash together

@@ -10,6 +10,12 @@
 export type User = { id: string; name: string; email: string; trade: string };
 export type Role = 'SUPERINTENDENT' | 'PROJECT_MANAGER' | 'VIEWER';
 export type ProjectMembership = { user_id: string; project_id: string; role: Role };
+export type RolePermission = {
+  permission_id: number;
+  role: Role;
+  project_id: string;
+  permission_name: string;
+};
 export type Project = { id: string; name: string; latitude: number; longitude: number };
 export type DailyLogStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED';
 export type DailyLog = {
@@ -63,6 +69,7 @@ export type Comment = {
 export type World = {
   users: User[];
   projectMemberships: ProjectMembership[];
+  rolePermissions: RolePermission[];
   projects: Project[];
   dailyLogs: DailyLog[];
   weatherObservations: WeatherObservation[];
@@ -120,6 +127,29 @@ const MEMBERSHIPS: ProjectMembership[] = [
   // user-9 used to be a VIEWER on project-1. That row has been removed,
   // but their comments on project-1 photos remain.
 ];
+
+// Default role -> permission policy, copied onto every project (permissions are
+// project-scoped). Names follow `{operation}:{entity}` (see docs/level-4.md).
+// Owning a row (e.g. deleting your own comment) is NOT a role permission; it's
+// checked against the row itself, so it doesn't appear here.
+const CRUD = ['create', 'read', 'update', 'delete'];
+const DEFAULT_ROLE_PERMISSIONS: Record<Role, string[]> = {
+  SUPERINTENDENT: ['daily-logs', 'notes', 'photos', 'comments', 'memberships'].flatMap((entity) =>
+    CRUD.map((operation) => `${operation}:${entity}`),
+  ),
+  PROJECT_MANAGER: ['daily-logs', 'notes', 'photos', 'comments'].flatMap((entity) =>
+    CRUD.map((operation) => `${operation}:${entity}`),
+  ),
+  // Viewers read everything and can write notes and comments (user-4 does both in the seed).
+  VIEWER: [
+    'read:daily-logs',
+    'read:notes',
+    'read:photos',
+    'read:comments',
+    'create:notes',
+    'create:comments',
+  ],
+};
 
 // Crew members are users with NO project_memberships rows.
 const CREW: { project_id: string; user_id: string; role: string }[] = [
@@ -305,6 +335,18 @@ export function buildWorld(): World {
     }
   }
 
+  let nextPermissionId = 1;
+  const rolePermissions: RolePermission[] = PROJECTS.flatMap((project) =>
+    (Object.keys(DEFAULT_ROLE_PERMISSIONS) as Role[]).flatMap((role) =>
+      DEFAULT_ROLE_PERMISSIONS[role].map((permission_name) => ({
+        permission_id: nextPermissionId++,
+        role,
+        project_id: project.id,
+        permission_name,
+      })),
+    ),
+  );
+
   const crewMembers: CrewMember[] = CREW.map((crew, index) => ({
     id: `crew-${index + 1}`,
     ...crew,
@@ -327,6 +369,7 @@ export function buildWorld(): World {
   return {
     users: USERS,
     projectMemberships: MEMBERSHIPS,
+    rolePermissions,
     projects: PROJECTS,
     dailyLogs,
     weatherObservations,
