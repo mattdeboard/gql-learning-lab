@@ -9,6 +9,7 @@ export type LoaderContext = {
 } & {
   logByIdLoader: DataLoader<string, DailyLogEntity | null, string>;
   projectByIdLoader: DataLoader<string, ProjectEntity | null, string>;
+  projectByLogIdLoader: DataLoader<string, ProjectEntity | null, string>;
 };
 
 export function loaderContext(): LoaderContext {
@@ -17,6 +18,7 @@ export function loaderContext(): LoaderContext {
     logsForUserLoader: groupedLoader(getDailyLogTable, 'createdBy'),
     logByIdLoader: logByIdLoader(),
     projectByIdLoader: projectByIdLoader(),
+    projectByLogIdLoader: projectByLogIdLoader(),
   };
 }
 
@@ -33,5 +35,16 @@ function projectByIdLoader() {
     const projects = await getProjectTable().select().whereIn('id', ids);
     const map = new Map(projects.map((pj) => [pj.id, pj]));
     return ids.map((id) => map.get(id) ?? null);
+  });
+}
+
+function projectByLogIdLoader() {
+  return new DataLoader(async (ids: readonly string[]) => {
+    const logs = await getDailyLogTable().select('id', 'projectId').whereIn('id', ids);
+    const projectIds = logs.map((l) => l.projectId);
+    const projects = await getProjectTable().select().distinct().whereIn('id', projectIds);
+    const projectIdMap = new Map(projects.map((pj) => [pj.id, pj]));
+    const logIdToProject = new Map(logs.map((log) => [log.id, projectIdMap.get(log.projectId)]));
+    return ids.map((id) => logIdToProject.get(id) ?? null);
   });
 }

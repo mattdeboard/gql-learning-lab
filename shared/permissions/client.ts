@@ -39,9 +39,7 @@ export default class PermissionsApiClient implements IPermissionsApiClient {
     return true;
   }
 
-  async getResourcePermsForUser(userId: string | null): Promise<UserResourcePermissionsForProject> {
-    if (userId === null) return {};
-
+  async getResourcePermsForUser(userId: string): Promise<UserResourcePermissionsForProject> {
     const res = await fetch(this.userPermsForProjectUrl(userId), {
       method: 'GET',
     });

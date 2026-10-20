@@ -10,8 +10,7 @@ export type PermissionsContext = Awaited<ReturnType<typeof getContext>>;
 
 export async function getContext(headers: IncomingHttpHeaders) {
   const loaders = loaderContext();
-  const getPermissions = async (userId: string | null) => {
-    if (!userId) return {};
+  const getPermissions = async (userId: string) => {
     const perms = await getPermissionsForUser(userId);
     const entries = perms.entries();
     const permissions: Record<string, ResourcePermission[]> = {};

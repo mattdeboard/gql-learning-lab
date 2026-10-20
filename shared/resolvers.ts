@@ -1,4 +1,4 @@
-import { GraphQLError, type GraphQLResolveInfo } from 'graphql';
+import { type GraphQLResolveInfo } from 'graphql';
 import type { AuthContext } from './context.ts';
 
 // A type for a subgraph's whole `resolvers` object, so individual resolver
@@ -75,14 +75,3 @@ export type Resolvers<
   // __resolveReference gets `unknown`: list it above, or annotate the parameter.
   [typeName: string]: TypeResolvers<TContext>;
 };
-
-export function authnCheck(userId: string | null): userId is string {
-  if (!userId) {
-    throw new GraphQLError('Unauthorized: You must log in', {
-      extensions: {
-        code: 'Unauthenticated request',
-      },
-    });
-  }
-  return true;
-}

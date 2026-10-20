@@ -74,7 +74,7 @@ export async function createOrUpdateMembership(userId: string, projectId: string
   return membership;
 }
 
-export async function getRoleForProject(userId: string | null, projectId: string): Promise<Role | null> {
+export async function getRoleForProject(userId: string, projectId: string): Promise<Role | null> {
   if (userId === null) return null;
   const membership = await getMembership(userId, projectId);
   return membership?.role ?? null;

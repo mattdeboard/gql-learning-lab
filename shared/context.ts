@@ -4,10 +4,11 @@ import PermissionsApiClient, {
   type UserResourcePermissionsForProject,
 } from './permissions/client.ts';
 import { createSubgraphLogger, type Logger } from './log.ts';
+import { GraphQLError } from 'graphql';
 
 export type AuthContext = {
   // null when the request has no usable Authorization header
-  userId: string | null;
+  userId: string;
 };
 
 export type AuthzContext = {
@@ -29,12 +30,25 @@ export type SubgraphContext<TContext extends Record<string, unknown>> = AuthCont
 export function authFromHeaders(headers: IncomingHttpHeaders): AuthContext {
   const header = headers.authorization ?? '';
   const match = /^Bearer\s+(\S+)$/i.exec(header);
-  return { userId: match?.[1] ?? null };
+  const userId = match?.[1] ?? null;
+  authnCheck(userId);
+  return { userId };
 }
 
 function lazy<T>(load: () => Promise<T>): () => Promise<T> {
   let promise: Promise<T> | undefined;
   return () => (promise ??= load());
+}
+
+function authnCheck(userId: string | null): asserts userId is string {
+  if (!userId) {
+    throw new GraphQLError('Unauthorized: You must log in', {
+      extensions: {
+        code: 'Unauthenticated request',
+      },
+    });
+  }
+  // return true;
 }
 
 export async function createContext<TContext extends Record<string, unknown>>(
@@ -44,9 +58,10 @@ export async function createContext<TContext extends Record<string, unknown>>(
   getPermissionsFn?: (userId: string) => Promise<UserResourcePermissionsForProject>,
 ): Promise<SubgraphContext<TContext>> {
   const { userId } = authFromHeaders(headers);
+  authnCheck(userId);
   const permsApiClient = new PermissionsApiClient(subgraph);
   const source = getPermissionsFn ?? ((id: string) => permsApiClient.getResourcePermsForUser(id));
-  const getPermissions = lazy(() => (userId === null ? Promise.resolve({}) : source(userId)));
+  const getPermissions = lazy(() => source(userId));
   return {
     logger: createSubgraphLogger(subgraph),
     userId,
