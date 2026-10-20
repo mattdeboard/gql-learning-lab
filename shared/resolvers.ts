@@ -81,29 +81,6 @@ export function authnCheck(userId: string | null): userId is string {
     throw new GraphQLError('Unauthorized: You must log in', {
       extensions: {
         code: 'Unauthenticated request',
-        http: {
-          status: 401,
-        },
-      },
-    });
-  }
-  return true;
-}
-
-export function authzCheck(
-  permissions: Map<string, { permissionName: PermissionName }[]>,
-  projectId: string,
-  permissionNames: PermissionName[],
-): boolean {
-  const perms = permissions.get(projectId);
-  const projectPerms = perms?.map((p) => p.permissionName);
-  if (new Set(permissionNames).isDisjointFrom(new Set(projectPerms))) {
-    throw new GraphQLError('Forbidden by role', {
-      extensions: {
-        code: 'FORBIDDEN',
-        http: {
-          status: 403,
-        },
       },
     });
   }

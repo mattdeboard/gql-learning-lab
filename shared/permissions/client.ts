@@ -33,9 +33,6 @@ export default class PermissionsApiClient implements IPermissionsApiClient {
       throw new GraphQLError('Forbidden by role', {
         extensions: {
           code: 'FORBIDDEN',
-          http: {
-            status: 403,
-          },
         },
       });
     }
