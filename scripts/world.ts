@@ -44,6 +44,7 @@ export type CrewMember = {
 };
 export type Note = {
   id: string;
+  project_id: string; // copied from the note's daily log, for authorization (docs/level-4.md)
   daily_log_id: string;
   author_id: string;
   body: string;
@@ -60,6 +61,7 @@ export type Photo = {
 };
 export type Comment = {
   id: string;
+  project_id: string; // copied from the comment's photo, for authorization (docs/level-4.md)
   photo_id: string;
   author_id: string;
   body: string;
@@ -262,6 +264,7 @@ export function buildWorld(): World {
     for (let c = 0; c < commentCount; c++) {
       comments.push({
         id: `comment-${nextId.comment++}`,
+        project_id: projectId,
         photo_id: photoId,
         author_id: random.pick(COMMENTERS[projectId]!),
         body: random.pick(COMMENT_BODIES),
@@ -305,6 +308,7 @@ export function buildWorld(): World {
       for (let n = 0; n < noteCount; n++) {
         notes.push({
           id: `note-${nextId.note++}`,
+          project_id: project.id,
           daily_log_id: logId,
           author_id: random.pick(NOTE_AUTHORS[project.id]!),
           body: random.pick(NOTE_BODIES),
@@ -320,6 +324,7 @@ export function buildWorld(): World {
         if (project.id === LOST_ACCESS_PROJECT && p === 0) {
           comments.push({
             id: `comment-${nextId.comment++}`,
+            project_id: project.id,
             photo_id: photoId,
             author_id: LOST_ACCESS_USER,
             body: 'Structural sign-off on this area is attached to the RFI.',

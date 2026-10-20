@@ -126,8 +126,19 @@ A single tuple from the `permissions` table for `delete:comments` resource permi
 
 There are some decisions I've made I want to document around the design of the permissions APIs (both REST and GraphQL):
 
-1. How resource permissions are declared/created
-2. The nature & location of the contract between the Permissions API and client services
+1. Authorization scope
+2. How resource permissions are declared/created
+3. The nature & location of the contract between the Permissions API and client services
+
+### Authorization scope
+
+The authorization scope in this learning lab is the `Project`. All authorization flows from what permissions the role has _in the project_.
+
+For example, take the `read:comments` resource permission. It doesn't mean "read all comments everywhere." It means, "Read all comments on photos that are attached to daily logs _in Project 123_."
+
+In other words, all permissions are scoped to a project. Therefore, all entities (`Comment`, `Note`, `Photo`, etc.) _must_ be aware of what project they belong to.
+
+An alternative to this would be a ReBAC ("relationship-based access control") system based on the Google Zanzibar paper, such as SpiceDB. However, that is well beyond the scope of this learning lab.
 
 ### Resource permissions registration
 
