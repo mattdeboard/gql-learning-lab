@@ -1,12 +1,9 @@
 import type { IncomingHttpHeaders } from 'node:http';
-import { authFromHeaders, type AuthContext } from '@lab/shared/context';
-import { loaderContext, type LoaderContext } from './loaders.ts';
+import { createContext } from '@lab/shared/context';
+import { loaderContext } from './loaders.ts';
 
-export type UsersContext = AuthContext & LoaderContext;
+export type UsersContext = Awaited<ReturnType<typeof getContext>>;
 
-export function getContext(headers: IncomingHttpHeaders): UsersContext {
-  return {
-    ...authFromHeaders(headers),
-    ...loaderContext(),
-  };
+export async function getContext(headers: IncomingHttpHeaders) {
+  return createContext(headers, 'users', loaderContext);
 }

@@ -1,4 +1,4 @@
-import type { GraphQLResolveInfo } from 'graphql';
+import { type GraphQLResolveInfo } from 'graphql';
 import type { AuthContext } from './context.ts';
 
 // A type for a subgraph's whole `resolvers` object, so individual resolver

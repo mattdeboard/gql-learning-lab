@@ -16,7 +16,7 @@ Every subgraph line looks the same (see `shared/log.ts`):
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `$1`  | local time, to the millisecond                                                                                                              |
 | `$2`  | `[subgraph]`                                                                                                                                |
-| `$3`  | kind: `op`, `entities`, `sql`, `info`                                                                                                       |
+| `$3`  | kind: `op`, `entities`, `sql`, `rest`, `info`                                                                                               |
 | `$4…` | `op`: operation name · `entities`: representation count, then a per-`__typename` breakdown · `sql`: the statement with parameters filled in |
 
 Since the fields are space-separated, `awk '$3=="sql"'` selects by kind, and `$2` gives the subgraph.
@@ -28,6 +28,8 @@ Any line **not** in this format comes from rover/the router (`==> …`, `WARN: �
 The router names each subgraph fetch `<YourOperation>__<subgraph>__<n>`. `n` is the fetch's position in the query plan, so `LogsView__users__0` is fetch #0 in the plan for `LogsView`, sent to `users`. Unnamed client operations show up as `(anonymous)`, so name your operations in `queries/` to make the logs useful.
 
 `_entities` fetches are logged as `entities` instead of `op`, because the interesting thing about them is the count.
+
+`rest` lines are calls to the permissions subgraph's internal REST endpoint (`/internal/access`), which is outside the graph and so never appears in a query plan. Count them like SQL: `awk '$3=="rest" {print $2}' logs/dev.log | sort | uniq -c`. A batch call logs its pair count, so many single `GET` lines where one `POST …/batch` would do is the cross-service version of N+1.
 
 ## Capture to a file
 

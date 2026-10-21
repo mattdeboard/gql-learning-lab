@@ -1,0 +1,43 @@
+type Membership {
+  user: User
+  project: Project
+  role: Role!
+}
+
+enum Role {
+  SUPERINTENDENT
+  PROJECT_MANAGER
+  VIEWER
+}
+
+type User @key(fields: "id") {
+  id: ID!
+  memberships: [Membership]
+}
+
+type Project @key(fields: "id") {
+  id: ID!
+  memberships: [Membership]
+  myRole: Role
+}
+
+input UserAllowedForProjectInput {
+  userId: ID!
+  projectId: ID!
+}
+
+input CreateOrUpdateMembershipInput {
+  userId: ID!
+  projectId: ID!
+  role: Role
+}
+
+type Query {
+  userAllowedForProject(input: UserAllowedForProjectInput!): Boolean
+}
+
+type Mutation {
+  createOrUpdateMembership(input: CreateOrUpdateMembershipInput!): Membership
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])

@@ -5,6 +5,7 @@ const connection = openDb('comments', fileURLToPath(new URL('../db/comments.sqli
 
 export interface CommentEntity {
   id: string;
+  projectId: string; // copied from the photo at creation; the authorization scope
   photoId: string; // a photo owned by the photos subgraph
   authorId: string; // a user owned by the users subgraph
   body: string;

@@ -5,6 +5,7 @@ const connection = openDb('notes', fileURLToPath(new URL('../db/notes.sqlite', i
 
 export interface NoteEntity {
   id: string;
+  projectId: string; // copied from the daily log at creation; the authorization scope
   dailyLogId: string; // a daily log owned by the daily-logs subgraph
   authorId: string; // a user owned by the users subgraph
   body: string;

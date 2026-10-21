@@ -5,7 +5,7 @@ export type LoaderContext = {
   userLoader: DataLoader<string, UserEntity | null, string>;
 };
 
-export function loaderContext(): LoaderContext {
+export async function loaderContext(): Promise<LoaderContext> {
   return {
     userLoader: userByIdLoader(),
   };

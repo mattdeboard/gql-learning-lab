@@ -1,8 +1,8 @@
 import type { Resolvers } from '@lab/shared/resolvers';
-import { getNoteById, getNotesByDailyLogId, type NoteEntity } from './data.ts';
+import { type NoteEntity } from './data.ts';
 import type { NotesContext } from './context.ts';
 
-export const resolvers: Resolvers<{ Note: { id: string }; DailyLog: { id: string } }> = {
+export const resolvers: Resolvers<{ Note: { id: string }; DailyLog: { id: string } }, NotesContext> = {
   Note: {
     dailyLog: (note: NoteEntity) => {
       return { id: note.dailyLogId };
@@ -12,7 +12,7 @@ export const resolvers: Resolvers<{ Note: { id: string }; DailyLog: { id: string
     },
   },
   DailyLog: {
-    notes: ({ id }: { id: string }, _args, { notesByLogId }: NotesContext) => {
+    notes: ({ id }: { id: string }, _args, { notesByLogId }) => {
       return notesByLogId.load(id);
     },
     __resolveReference: async ({ id }) => {
@@ -20,11 +20,11 @@ export const resolvers: Resolvers<{ Note: { id: string }; DailyLog: { id: string
     },
   },
   Query: {
-    noteById: async (_root, { id }: { id: string }) => {
-      return getNoteById(id);
+    noteById: async (_root, { id }: { id: string }, { notesByIdLoader }) => {
+      return notesByIdLoader.load(id);
     },
-    notesForDailyLog: async (_root, { dailyLogId }: { dailyLogId: string }) => {
-      return getNotesByDailyLogId(dailyLogId);
+    notesForDailyLog: async (_root, { dailyLogId }: { dailyLogId: string }, { notesByLogId }) => {
+      return notesByLogId.load(dailyLogId);
     },
   },
 };

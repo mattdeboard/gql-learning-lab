@@ -1,0 +1,20 @@
+# This exercises nearly the entire supergraph
+query NoteById($noteById: ID!) {
+  noteById(id: $noteById) {
+    dailyLog {
+      id
+      project {
+        photos {
+          id
+          caption
+          comments {
+            id
+          }
+        }
+      }
+    }
+    author {
+      email
+    }
+  }
+}

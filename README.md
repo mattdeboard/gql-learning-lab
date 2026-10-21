@@ -162,6 +162,11 @@ I work through these in order. `LEVEL=n npm run dev` runs Levels 0 through n. A 
 - **Level 4:** `permissions`. Where authorization belongs in a federated graph. I'll write `docs/level-4.md` comparing approaches.
 - **Level 5:** `weather`. `@external` / `@requires`, and the extra sequential plan step it causes.
 - **Level 6:** `crews`. Repetition to confirm the patterns stuck.
+- **Level 7:** GraphOS. Move from local composition to the GraphOS registry, and build the router-side option from `docs/level-4.md` for real.
+  - Publish each subgraph with `rover subgraph publish` and compose from the registry instead of local files; gate schema changes with `rover subgraph check`.
+  - Use Studio the way a subgraph owner at a real company would: explore the published supergraph, field usage, and operation traces (see `docs/service-ownership.md`).
+  - Add a **coprocessor** (available on the free tier, rate limited) that fetches the caller's memberships from permissions once per request and adds them as a header for every subgraph. Compare it with the per-subgraph lookups from Level 4: calls to permissions per request, latency, and what each subgraph still has to enforce. I'll add the comparison to `docs/level-4.md`.
+  - Secrets (`APOLLO_KEY`, graph ref) live in `.env`, never committed. The lab stops being offline-only at this Level.
 
 ### Stretch goals (tie back to the NFRs)
 
@@ -169,7 +174,7 @@ I work through these in order. `LEVEL=n npm run dev` runs Levels 0 through n. A 
 - Persisted queries
 - Write-up of a client-side offline story (cached log, queued mutations)
 - `k6` load test: steady traffic plus an end-of-day burst of note writes (the operations it sends come from `queries/`)
-- Split one subgraph into its own repo and compose from a GraphOS registry instead of local files
+- Split one subgraph into its own repo (composition from the GraphOS registry is covered in Level 7)
 
 ---
 

@@ -3,6 +3,6 @@
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type LoaderContext = {};
 
-export function loaderContext(): LoaderContext {
+export async function loaderContext(): Promise<LoaderContext> {
   return {};
 }
