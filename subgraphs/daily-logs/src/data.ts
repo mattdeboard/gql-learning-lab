@@ -37,6 +37,13 @@ export interface DailyLogEntity {
   createdBy: string; // user id
 }
 
+class DataAccessError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DataAccessError';
+  }
+}
+
 export const getProjectTable = () => connection<ProjectEntity>('projects');
 export const getDailyLogTable = () => connection<DailyLogEntity>('daily_logs');
 
@@ -58,8 +65,16 @@ export async function listProjects() {
 
 // ---------- daily logs ----------
 
-export async function getDailyLogsBy(filters: DailyLogQueryInput) {
-  return await getDailyLogTable().select().where(filters).orderBy('date');
+export async function getDailyLogsBy(filters: DailyLogQueryInput, allowedProjectIds: string[]) {
+  const { projectId } = filters;
+  if (projectId && !allowedProjectIds.includes(projectId)) {
+    throw new DataAccessError('Invalid filter value: projectId.');
+  }
+  return await getDailyLogTable()
+    .select()
+    .where(filters)
+    .and.whereIn('projectId', filters.projectId ? [filters.projectId] : allowedProjectIds)
+    .orderBy('date');
 }
 
 // Rows come back in whatever order SQLite returns them, not the order of `ids`,

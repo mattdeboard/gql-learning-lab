@@ -10,11 +10,8 @@ import {
   type UpdateDailyLogInput,
 } from './data.ts';
 import type { DailyLogsContext } from './context.ts';
-import { createSubgraphLogger } from '@lab/shared/log';
 import { GraphQLError } from 'graphql';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const LOGGER = createSubgraphLogger('daily-logs');
+import { GraphQLErrorForbidden } from '@lab/shared/permissions/client';
 
 export const resolvers: Resolvers<Record<'DailyLog' | 'Project', { id: string }>, DailyLogsContext> = {
   DailyLog: {
@@ -32,8 +29,23 @@ export const resolvers: Resolvers<Record<'DailyLog' | 'Project', { id: string }>
     },
   },
   Query: {
-    dailyLogsBy: async (_root, { filters }: { filters: DailyLogQueryInput }) => {
-      return getDailyLogsBy(filters);
+    dailyLogsBy: async (
+      _root,
+      { filters }: { filters: DailyLogQueryInput },
+      { authzCheck, getPermissions },
+    ) => {
+      const perms = await getPermissions();
+      const readableProjectIds = Object.entries(perms).reduce((acc, [projectId, ps]) => {
+        if (ps.includes('read:daily-logs')) {
+          acc.push(projectId);
+        }
+        return acc;
+      }, [] as string[]);
+      if (filters.projectId && !readableProjectIds.includes(filters.projectId)) {
+        throw new GraphQLErrorForbidden('You do not have access to the requested project.');
+      }
+      if (filters.projectId) await authzCheck(filters.projectId, ['read:daily-logs']);
+      return getDailyLogsBy(filters, readableProjectIds);
     },
     dailyLogsForCurrentUser: async (_root, _args, { userId, logsForUserLoader }) => {
       if (!userId) return null;

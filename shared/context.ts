@@ -48,7 +48,6 @@ function authnCheck(userId: string | null): asserts userId is string {
       },
     });
   }
-  // return true;
 }
 
 export async function createContext<TContext extends Record<string, unknown>>(
