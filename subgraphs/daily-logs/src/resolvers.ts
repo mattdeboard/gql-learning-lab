@@ -11,7 +11,11 @@ import {
 } from './data.ts';
 import type { DailyLogsContext } from './context.ts';
 import { GraphQLError } from 'graphql';
-import { GraphQLErrorForbidden } from '@lab/shared/permissions/client';
+import {
+  GraphQLErrorForbidden,
+  type ResourcePermission,
+  type UserResourcePermissionsForProject,
+} from '@lab/shared/permissions/client';
 
 export const resolvers: Resolvers<Record<'DailyLog' | 'Project', { id: string }>, DailyLogsContext> = {
   DailyLog: {
@@ -29,22 +33,15 @@ export const resolvers: Resolvers<Record<'DailyLog' | 'Project', { id: string }>
     },
   },
   Query: {
-    dailyLogsBy: async (
-      _root,
-      { filters }: { filters: DailyLogQueryInput },
-      { authzCheck, getPermissions },
-    ) => {
+    dailyLogsBy: async (_root, { filters }: { filters: DailyLogQueryInput }, { getPermissions }) => {
       const perms = await getPermissions();
-      const readableProjectIds = Object.entries(perms).reduce((acc, [projectId, ps]) => {
-        if (ps.includes('read:daily-logs')) {
-          acc.push(projectId);
+      const readableProjectIds = projectsWithPermissions(perms, { all: ['read:daily-logs'] });
+      if (filters.projectId) {
+        if (!readableProjectIds.includes(filters.projectId)) {
+          throw new GraphQLErrorForbidden('You do not have access to the requested project.');
         }
-        return acc;
-      }, [] as string[]);
-      if (filters.projectId && !readableProjectIds.includes(filters.projectId)) {
-        throw new GraphQLErrorForbidden('You do not have access to the requested project.');
+        return getDailyLogsBy(filters, [filters.projectId]);
       }
-      if (filters.projectId) await authzCheck(filters.projectId, ['read:daily-logs']);
       return getDailyLogsBy(filters, readableProjectIds);
     },
     dailyLogsForCurrentUser: async (_root, _args, { userId, logsForUserLoader }) => {
@@ -98,3 +95,28 @@ export const resolvers: Resolvers<Record<'DailyLog' | 'Project', { id: string }>
     },
   },
 };
+
+type SoughtResourcePermissions = Partial<Record<'any' | 'all', ResourcePermission[]>>;
+
+function projectsWithPermissions(
+  perms: UserResourcePermissionsForProject,
+  soughtResourcePerms: SoughtResourcePermissions,
+): string[] {
+  const { any = [], all = [] } = soughtResourcePerms;
+
+  // If there's NO perms to filter on, just return all projects.
+  if (!any.length && !all.length) return Object.keys(perms);
+
+  // This must only intersect in any way with a given `perms[projectId]`
+  const anySet = new Set(any);
+  // This must be a subset of given `perms[projectId]`
+  const allSet = new Set(all);
+
+  return Object.entries(perms).reduce((acc, [projectId, ps]) => {
+    const permsSet = new Set(ps);
+    if (permsSet.intersection(anySet) || allSet.isSubsetOf(permsSet)) {
+      acc.push(projectId);
+    }
+    return acc;
+  }, [] as string[]);
+}
