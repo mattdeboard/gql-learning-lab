@@ -7,5 +7,5 @@ import { createContext } from '@lab/shared/context';
 export type CommentsContext = Awaited<ReturnType<typeof getContext>>;
 
 export function getContext(headers: IncomingHttpHeaders) {
-  return createContext(headers, 'comments', loaderContext());
+  return createContext(headers, 'comments', loaderContext);
 }

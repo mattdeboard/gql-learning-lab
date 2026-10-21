@@ -11,7 +11,7 @@ export type LoaderContext = {
   [key in (typeof _GROUP_LOADERS)[number]]: DataLoader<string, MembershipEntity[], string>;
 };
 
-export function loaderContext(): LoaderContext {
+export async function loaderContext(): Promise<LoaderContext> {
   return {
     membershipsByUserIdLoader: groupedLoader(getMembershipTable, 'userId'),
     membershipsByProjectIdLoader: groupedLoader(getMembershipTable, 'projectId'),

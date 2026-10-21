@@ -8,7 +8,7 @@ export type LoaderContext = {
   commentsForPhotoLoader: DataLoader<string, CommentEntity[], string>;
 };
 
-export function loaderContext(): LoaderContext {
+export async function loaderContext(): Promise<LoaderContext> {
   return {
     commentsForUserLoader: groupedLoader(getCommentTable, 'authorId'),
     commentsForPhotoLoader: groupedLoader(getCommentTable, 'photoId'),

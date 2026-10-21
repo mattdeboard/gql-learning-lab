@@ -7,5 +7,5 @@ import { loaderContext } from './loaders.ts';
 export type NotesContext = Awaited<ReturnType<typeof getContext>>;
 
 export async function getContext(headers: IncomingHttpHeaders) {
-  return createContext(headers, 'notes', loaderContext());
+  return createContext(headers, 'notes', loaderContext);
 }

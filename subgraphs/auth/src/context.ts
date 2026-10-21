@@ -7,5 +7,5 @@ import { loaderContext } from './loaders.ts';
 export type AuthSubgraphContext = Awaited<ReturnType<typeof getContext>>;
 
 export function getContext(headers: IncomingHttpHeaders) {
-  return createContext(headers, 'auth', loaderContext());
+  return createContext(headers, 'auth', loaderContext);
 }

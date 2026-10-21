@@ -50,10 +50,13 @@ function authnCheck(userId: string | null): asserts userId is string {
   }
 }
 
+export type PermissionsFn = () => Promise<UserResourcePermissionsForProject>;
+
 export async function createContext<TContext extends Record<string, unknown>>(
   headers: IncomingHttpHeaders,
   subgraph: string,
-  additionalContext: TContext,
+  addlCtxFn: (permsFn?: PermissionsFn) => Promise<TContext>,
+  // additionalContext: TContext,
   getPermissionsFn?: (userId: string) => Promise<UserResourcePermissionsForProject>,
 ): Promise<SubgraphContext<TContext>> {
   const { userId } = authFromHeaders(headers);
@@ -61,12 +64,23 @@ export async function createContext<TContext extends Record<string, unknown>>(
   const permsApiClient = new PermissionsApiClient(subgraph);
   const source = getPermissionsFn ?? ((id: string) => permsApiClient.getResourcePermsForUser(id));
   const getPermissions = lazy(() => source(userId));
+  const ctx = await addlCtxFn?.(getPermissions);
+  // let ctx = additionalContext;
+  // if (addlCtxFn) {
+  //   ctx = addlCtxFn(getPermissions);
+  // }
   return {
     logger: createSubgraphLogger(subgraph),
     userId,
     getPermissions,
     authzCheck: async (projectId, needed) =>
       permsApiClient.authzCheck(await getPermissions(), projectId, needed),
-    ...additionalContext,
+    // ...additionalContext,
+    ...ctx,
   };
+}
+export function isPermsFn(permsFn?: PermissionsFn): asserts permsFn is PermissionsFn {
+  if (!permsFn) {
+    throw new Error('Permissions function must be provided');
+  }
 }

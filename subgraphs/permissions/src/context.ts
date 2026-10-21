@@ -9,7 +9,6 @@ import { getPermissionsForUser } from './data.ts';
 export type PermissionsContext = Awaited<ReturnType<typeof getContext>>;
 
 export async function getContext(headers: IncomingHttpHeaders) {
-  const loaders = loaderContext();
   const getPermissions = async (userId: string) => {
     const perms = await getPermissionsForUser(userId);
     const entries = perms.entries();
@@ -19,7 +18,7 @@ export async function getContext(headers: IncomingHttpHeaders) {
     }
     return permissions;
   };
-  const ctx = await createContext(headers, 'permissions', loaders, getPermissions);
+  const ctx = await createContext(headers, 'permissions', loaderContext, getPermissions);
 
   return {
     ...ctx,
