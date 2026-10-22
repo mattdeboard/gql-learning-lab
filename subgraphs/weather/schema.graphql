@@ -1,0 +1,37 @@
+type WeatherObservation {
+  id: ID!
+  dailyLog: DailyLog
+  observedAt: String!
+  sky: Sky!
+  tempF: Int!
+  precipitation: Float!
+  windMph: Int!
+  isDelay: Boolean!
+}
+
+type DailyLog @key(fields: "id") {
+  id: ID!
+  date: String @external
+  project: Project @external
+  forecast: String @requires(fields: "date project { latitude longitude }")
+  weatherObservations: [WeatherObservation]
+}
+
+type Project @key(fields: "id", resolvable: false) {
+  id: ID!
+  latitude: Float @external
+  longitude: Float @external
+}
+
+enum Sky {
+  CLEAR
+  PARTLY_CLOUDY
+  OVERCAST
+  RAIN
+}
+
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: ["@external", "@key", "@requires", "@provides"]
+  )
