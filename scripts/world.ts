@@ -36,12 +36,13 @@ export type WeatherObservation = {
   wind_mph: number;
   is_delay: 0 | 1;
 };
+// One person on one day's crew: who was on site for a daily log, and in what job.
 export type CrewMember = {
   id: string;
-  project_id: string;
+  project_id: string; // the log's project; the authorization scope (docs/level-4.md)
+  daily_log_id: string;
   user_id: string;
-  role: string;
-  added_at: string;
+  role: string; // the person's job that day (Foreman, Electrician, ...), not a permissions role
 };
 export type Note = {
   id: string;
@@ -114,6 +115,19 @@ const USERS: User[] = [
   { id: 'user-8', name: 'Rosa Delgado', email: 'rosa@example.com', trade: 'Plumbing' },
   { id: 'user-9', name: 'Grant Feld', email: 'grant@example.com', trade: 'Structural Engineering' },
   { id: 'user-10', name: 'Ivy Chen', email: 'ivy@example.com', trade: 'HVAC' },
+  // More crew (no memberships; see CREW below)
+  { id: 'user-11', name: 'Sam Whitehorse', email: 'sam@example.com', trade: 'Carpentry' },
+  { id: 'user-12', name: 'Mei Tanaka', email: 'mei@example.com', trade: 'Carpentry' },
+  { id: 'user-13', name: 'Dmitri Volkov', email: 'dmitri@example.com', trade: 'Labor' },
+  { id: 'user-14', name: 'Aisha Bello', email: 'aisha@example.com', trade: 'Labor' },
+  { id: 'user-15', name: 'Owen Gallagher', email: 'owen@example.com', trade: 'Ironwork' },
+  { id: 'user-16', name: 'Lena Fischer', email: 'lena@example.com', trade: 'HVAC' },
+  { id: 'user-17', name: 'Javier Morales', email: 'javier@example.com', trade: 'Carpentry' },
+  { id: 'user-18', name: 'Nia Thompson', email: 'nia@example.com', trade: 'Labor' },
+  { id: 'user-19', name: 'Ray Begay', email: 'ray@example.com', trade: 'Labor' },
+  { id: 'user-20', name: 'Sofia Russo', email: 'sofia@example.com', trade: 'Electrical' },
+  { id: 'user-21', name: 'Andre Dubois', email: 'andre@example.com', trade: 'Concrete' },
+  { id: 'user-22', name: 'Kai Nakamura', email: 'kai@example.com', trade: 'Roofing' },
 ];
 
 const PROJECTS: Project[] = [
@@ -155,11 +169,29 @@ const DEFAULT_ROLE_PERMISSIONS: Record<Role, string[]> = {
 };
 
 // Crew members are users with NO project_memberships rows.
+// Each project's pool of field workers. A daily log's crew is drawn from it: the
+// crew changes day to day ("today the crew was X, Y and Z; the foreman was W"),
+// so crews are scoped to daily logs, not stored as standing groups.
+// `role` is the person's job, not a permissions role. Eight per project, staffed
+// for the job: a medical office going up in steel and concrete (project-1), and a
+// wood-framed elementary school (project-2).
 const CREW: { project_id: string; user_id: string; role: string }[] = [
   { project_id: 'project-1', user_id: 'user-5', role: 'Foreman' },
   { project_id: 'project-1', user_id: 'user-6', role: 'Electrician' },
+  { project_id: 'project-1', user_id: 'user-11', role: 'Carpenter' },
+  { project_id: 'project-1', user_id: 'user-12', role: 'Carpenter' },
+  { project_id: 'project-1', user_id: 'user-13', role: 'Laborer' },
+  { project_id: 'project-1', user_id: 'user-14', role: 'Laborer' },
+  { project_id: 'project-1', user_id: 'user-15', role: 'Ironworker' },
+  { project_id: 'project-1', user_id: 'user-16', role: 'HVAC Technician' },
   { project_id: 'project-2', user_id: 'user-7', role: 'Foreman' },
   { project_id: 'project-2', user_id: 'user-8', role: 'Plumber' },
+  { project_id: 'project-2', user_id: 'user-17', role: 'Carpenter' },
+  { project_id: 'project-2', user_id: 'user-18', role: 'Laborer' },
+  { project_id: 'project-2', user_id: 'user-19', role: 'Laborer' },
+  { project_id: 'project-2', user_id: 'user-20', role: 'Electrician' },
+  { project_id: 'project-2', user_id: 'user-21', role: 'Concrete Finisher' },
+  { project_id: 'project-2', user_id: 'user-22', role: 'Roofer' },
 ];
 
 const SUPE_BY_PROJECT: Record<string, string> = { 'project-1': 'user-1', 'project-2': 'user-2' };
@@ -354,23 +386,39 @@ export function buildWorld(): World {
     ),
   );
 
-  const crewMembers: CrewMember[] = CREW.map((crew, index) => ({
-    id: `crew-${index + 1}`,
-    ...crew,
-    added_at: '2026-10-12T08:00:00',
-  }));
+  // Each day's crew: the project's foreman plus 3–6 others from its pool.
+  // A separate generator, so adding crews never changes the rest of the world.
+  const crewRandom = createRandom(20261012);
+  let nextCrewMemberId = 1;
+  const crewMembers: CrewMember[] = dailyLogs.flatMap((log) => {
+    const pool = CREW.filter((member) => member.project_id === log.project_id);
+    const foreman = pool.filter((member) => member.role === 'Foreman');
+    const others = pool.filter((member) => member.role !== 'Foreman');
+    const onSite = others
+      .map((member) => ({ member, order: crewRandom.next() }))
+      .sort((a, b) => a.order - b.order)
+      .slice(0, crewRandom.int(3, 6))
+      .map(({ member }) => member);
+    return [...foreman, ...onSite].map(({ user_id, role }) => ({
+      id: `crew-member-${nextCrewMemberId++}`,
+      project_id: log.project_id,
+      daily_log_id: log.id,
+      user_id,
+      role,
+    }));
+  });
 
   const personas = [
     { userId: 'user-1', description: 'Author: SUPERINTENDENT on project-1' },
     { userId: 'user-2', description: 'Author: SUPERINTENDENT on project-2' },
     { userId: 'user-3', description: 'PROJECT_MANAGER on project-1 and project-2' },
     { userId: 'user-4', description: 'VIEWER on project-1 (also writes notes and comments)' },
-    { userId: 'user-5', description: 'Crew on project-1, no permissions' },
-    { userId: 'user-6', description: 'Crew on project-1, no permissions' },
-    { userId: 'user-7', description: 'Crew on project-2, no permissions' },
-    { userId: 'user-8', description: 'Crew on project-2, no permissions' },
     { userId: 'user-9', description: 'Comment author who LOST access to project-1, no memberships' },
     { userId: 'user-10', description: 'Outsider: no memberships, not on any crew, no comments' },
+    ...CREW.map(({ project_id, user_id, role }) => ({
+      userId: user_id,
+      description: `Crew on ${project_id} (${role}), no permissions`,
+    })),
   ];
 
   return {
