@@ -1,1 +1,18 @@
-# TODO(matt)
+type CrewMember {
+  id: ID!
+  dailyLog: DailyLog!
+  user: User!
+  role: String!
+}
+
+type User @key(fields: "id") {
+  id: ID!
+  crewDays: [DailyLog]
+}
+
+type DailyLog @key(fields: "id") {
+  id: ID!
+  crew: [CrewMember]
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
