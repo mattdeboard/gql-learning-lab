@@ -51,4 +51,5 @@ type Mutation {
   updateLog(options: UpdateDailyLogInput!): DailyLog
 }
 
-extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@external", "@key", "@provides"])

@@ -27,6 +27,7 @@ export type DailyLog = {
 };
 export type WeatherObservation = {
   id: string;
+  project_id: string; // copied from the observation's daily log; the authorization scope for writes (docs/level-4.md)
   daily_log_id: string;
   observed_at: string;
   sky: string;
@@ -294,6 +295,7 @@ export function buildWorld(): World {
         const windMph = random.int(0, 30);
         weatherObservations.push({
           id: `weather-${nextId.weather++}`,
+          project_id: project.id,
           daily_log_id: logId,
           observed_at: time(date, 7 + w * 4, 0),
           sky: raining ? 'RAIN' : random.pick(SKIES),
